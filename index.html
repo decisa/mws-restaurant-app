@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <link rel="stylesheet" src="//normalize-css.googlecode.com/svn/trunk/normalize.css" />
+  <link rel="stylesheet" href="css/styles.css">
+  <title>Restaurant Reviews</title>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+</head>
+
+<body>
+  <header>
+    <a href="#restaurants" class="skip-link" tabindex="0">Skip map application</a>
+    <nav>
+      <h1>
+        <a href="/" tabindex="0">Restaurant Reviews</a>
+      </h1>
+    </nav>
+  </header>
+
+  <main id="maincontent">
+    <section id="map-container" role="application" aria-label="Google Maps">
+      <div id="map"></div>
+    </section>
+
+    <section id="restaurants" tabindex="-1">
+      <div class="filter-options">
+        <h2>Filter Results</h2>
+        <select id="neighborhoods-select" name="neighborhoods" onchange="updateRestaurants()"  aria-labelledby="neighborhoods-label">
+          <option value="all" aria-label="All neighborhoods">All Neighborhoods</option>
+        </select>
+        <label id="neighborhoods-label" class="filter-label">Filter restaurants by neighborhood</label>
+        <select id="cuisines-select" name="cuisines" onchange="updateRestaurants()" aria-labelledby="cuisines-label">
+          <option value="all">All Cuisines</option>
+        </select>
+        <label id="cuisines-label" class="filter-label">Filter restaurants by cuisines</label>
+        <div class="results-alert" aria-live="polite">Total results : 10</div>
+      </div>
+      <ul id="restaurants-list"></ul>
+    </section>
+  </main>
+
+  <script type="application/javascript" charset="utf-8" src="js/dbhelper.js"></script>
+  <script type="application/javascript" charset="utf-8" src="js/main.js"></script>
+  <script type="application/javascript" charset="utf-8" src="js/controller.js"></script>
+  <script type='text/javascript' src='js/config.js'></script>
+  <!--<script async defer src="https://maps.googleapis.com/maps/api/js?key=mapKey&libraries=places&callback=initMap"></script>-->
+  <script async defer>fetch("https://maps.googleapis.com/maps/api/js?key=_GOOGLE_API_KEY_HERE_&libraries=places&callback=initMap");</script>
+
+
+  <footer id="footer">
+    Copyright (c) 2017 <a href="/"><strong>Restaurant Reviews</strong></a> All Rights Reserved.
+  </footer>
+
+</body>
+</html>
