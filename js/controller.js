@@ -1,6 +1,7 @@
 if (navigator.serviceWorker) {
     window.addEventListener('load', function() {
-        navigator.serviceWorker.register('/sw.js').then(function(registration) {
+        navigator.serviceWorker.register('/sw.js')
+        .then(function(registration) {
             if (!navigator.serviceWorker.controller) {
                 console.log(`clean install sw registration successful ${registration.scope}`);
                 return;
@@ -27,8 +28,9 @@ if (navigator.serviceWorker) {
                     }
                 });                   
             });
-        }, function(err) {
-            console.log(`sw registration is not successful: ${err}`);
+        })
+        .catch(function(err) {
+            console.log(`service worker registration is not successful: ${err}`);
         });
     });
 }

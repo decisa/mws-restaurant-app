@@ -1,7 +1,7 @@
 
-var projectCacheName = 'restaurant-project-v2'; 
-var projectImgCacheName = 'restaurant-images-v3';
-var projectMapCacheName = 'restaurant-maps-v1';
+var projectCacheName = 'restaurant-project-v4'; 
+var projectImgCacheName = 'restaurant-images-v4';
+var projectMapCacheName = 'restaurant-maps-v4';
 var allCaches = [
     projectCacheName,
     projectImgCacheName,
@@ -19,7 +19,7 @@ self.addEventListener('install', function(event) {
         '/js/restaurant_info.js',
         '/css/styles.css',
         '/data/restaurants.json',
-        'http://weloveiconfonts.com/api/?family=entypo'
+        // 'http://weloveiconfonts.com/api/?family=entypo'
     ];
     
     event.waitUntil(
@@ -50,8 +50,8 @@ self.addEventListener('activate', function(event) {
 
 self.addEventListener('fetch', function(event) {
     let requestUrl = new URL(event.request.url);
-    
-    if (requestUrl.pathname.startsWith('/img/')){
+
+    if (requestUrl.pathname.startsWith('/img/')) {
         event.respondWith(servePhoto(event.request));
         return;
     }
@@ -59,12 +59,15 @@ self.addEventListener('fetch', function(event) {
 
     if (requestUrl.pathname.includes('map')){
         event.respondWith(
-            caches.open(projectMapCacheName).then(function(cache) {
-                return cache.match(requestUrl).then(function(response) {
+            caches.open(projectMapCacheName)
+            .then(function(cache) {
+                return cache.match(requestUrl)
+                .then(function(response) {
                     if (response) {
                         return response;
                     }
-                    return fetch(event.request).then(function(networkResponse) {
+                    return fetch(event.request)
+                    .then(function(networkResponse) {
                         cache.put(requestUrl, networkResponse.clone());
                         return networkResponse;
                     });
@@ -76,10 +79,12 @@ self.addEventListener('fetch', function(event) {
 
     // check if request is in cache and serve without caching
     event.respondWith(
-        caches.match(requestUrl).then(function(response) {
-            if (response) {
-                return response;
+        caches.match(requestUrl)
+        .then(function(cachedResponse) {
+            if (cachedResponse) {
+                return cachedResponse;
             }
+            // if not in cache, just fetch from network:
             return fetch(event.request);
         })
     );
@@ -88,17 +93,21 @@ self.addEventListener('fetch', function(event) {
 
 function servePhoto(request) {
     // images have format  1-400-1x.jpg 1-800-2x.jpg
-    let storageUrl = request.url.replace(/-\d+-\d+x\.jpg$/,'');
+    var storageURL = request.url.replace(/-\d+-\d+x\.jpg$/, '');
 
-    return caches.open(projectImgCacheName).then(function(cache) {
-        return cache.match(storageUrl).then(function(response) {
-            if (response) {
+    return caches.open(projectImgCacheName)
+    .then(function(cache) {
+        return cache.match(storageURL)
+        .then(function(cachedResponse) {
+            if (cachedResponse) {
                 // return image from cache
-                return response;
-            } 
+                return cachedResponse;
+            }
+            console.log(`request = ${request.clone()}`); 
 
-            return fetch(request).then(function(networkResponse) {
-                cache.put(storageUrl, networkResponse.clone());
+            return fetch(request)
+            .then(function(networkResponse) {
+                cache.put(storageURL, networkResponse.clone());
                 return networkResponse;
             });
         });
