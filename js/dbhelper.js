@@ -15,20 +15,45 @@ class DBHelper {
   /**
    * Fetch all restaurants.
    */
+  static getData(url, callback) {
+    fetch(url)
+    .then(function(response) {
+      response.json()
+      .then(data => callback(null, data));
+    })
+    .catch(function(error) {
+      console.log(error);
+      callback(error, null);
+    });
+  }
+
   static fetchRestaurants(callback) {
-    let xhr = new XMLHttpRequest();
-    xhr.open('GET', DBHelper.DATABASE_URL);
-    xhr.onload = () => {
-      if (xhr.status === 200) { // Got a success response from server!
-        const json = JSON.parse(xhr.responseText);
-        const restaurants = json;//.restaurants;
-        callback(null, restaurants);
-      } else { // Oops!. Got an error from server.
-        const error = (`Request failed. Returned status of ${xhr.status}`);
-        callback(error, null);
-      }
-    };
-    xhr.send();
+    console.log("version 4");
+    this.getData(DBHelper.DATABASE_URL, callback);
+    // fetch(DBHelper.DATABASE_URL)
+    // .then(function(response) {
+    //   response.json()
+    //   .then(restaurants => callback(null, restaurants));
+    // })
+    // .catch(function(error) {
+    //   console.log(error);
+    //   callback(error, null);
+    // });
+
+
+    // let xhr = new XMLHttpRequest();
+    // xhr.open('GET', DBHelper.DATABASE_URL);
+    // xhr.onload = () => {
+    //   if (xhr.status === 200) { // Got a success response from server!
+    //     const json = JSON.parse(xhr.responseText);
+    //     const restaurants = json;//.restaurants;
+    //     callback(null, restaurants);
+    //   } else { // Oops!. Got an error from server.
+    //     const error = (`Request failed. Returned status of ${xhr.status}`);
+    //     callback(error, null);
+    //   }
+    // };
+    // xhr.send();
   }
 
   /**
@@ -36,19 +61,21 @@ class DBHelper {
    */
   static fetchRestaurantById(id, callback) {
     // fetch all restaurants with proper error handling.
-    this.fetchRestaurants((error, restaurants) => {
-      if (error) {
-        callback(error, null);
-      } else {
-        // cannot use === in find, because r.id is a number , id is a string
-        const result = restaurants.find(r => r.id == id);
-        if (result) {
-          callback(null, result);
-        } else {
-          callback('Restaurant does not exist', null);
-        }
-      }
-    });
+    this.getData(`${DBHelper.DATABASE_URL}\\${id}` , callback);
+
+    // this.fetchRestaurants((error, restaurants) => {
+    //   if (error) {
+    //     callback(error, null);
+    //   } else {
+    //     // cannot use === in find, because r.id is a number , id is a string
+    //     const result = restaurants.find(r => r.id == id);
+    //     if (result) {
+    //       callback(null, result);
+    //     } else {
+    //       callback('Restaurant does not exist', null);
+    //     }
+    //   }
+    // });
   }
 
   /**
