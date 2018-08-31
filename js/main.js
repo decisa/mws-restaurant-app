@@ -23,14 +23,12 @@ document.addEventListener('DOMContentLoaded', (event) => {
  * Fetch all neighborhoods and set their HTML.
  */
 fetchNeighborhoods = () => {
-  DBHelper.fetchNeighborhoods((error, neighborhoods) => {
-    if (error) { // Got an error
-      console.error(error);
-    } else {
-      self.neighborhoods = neighborhoods;
-      fillNeighborhoodsHTML();
-    }
-  });
+  DBHelper.fetchNeighborhoods()
+  .then(neighborhoods => {
+    self.neighborhoods = neighborhoods;
+    fillNeighborhoodsHTML();
+  })
+  .catch(console.error);
 }
 
 /**
@@ -52,14 +50,12 @@ fillNeighborhoodsHTML = (neighborhoods = self.neighborhoods) => {
  * Fetch all cuisines and set their HTML.
  */
 fetchCuisines = () => {
-  DBHelper.fetchCuisines((error, cuisines) => {
-    if (error) { // Got an error!
-      console.error(error);
-    } else {
-      self.cuisines = cuisines;
-      fillCuisinesHTML();
-    }
-  });
+  DBHelper.fetchCuisines()
+  .then(cuisines => {
+    self.cuisines = cuisines;
+    fillCuisinesHTML();
+  })
+  .catch(console.error);
 }
 
 /**
@@ -120,7 +116,6 @@ initMap = () => {
  * Update page and map for current restaurants.
  */
 updateRestaurants = () => {
-  
   const cSelect = document.getElementById('cuisines-select');
   const nSelect = document.getElementById('neighborhoods-select');
 
@@ -130,17 +125,15 @@ updateRestaurants = () => {
   const cuisine = cSelect[cIndex].value;
   const neighborhood = nSelect[nIndex].value;
 
-  DBHelper.fetchRestaurantByCuisineAndNeighborhood(cuisine, neighborhood, (error, restaurants) => {
-    if (error) { // Got an error!
-      console.error(error);
-    } else {
-      resetRestaurants(restaurants);
-      fillRestaurantsHTML();
-      const liveAlert = document.getElementsByClassName('results-alert');
-      liveAlert[0].innerHTML = `${restaurants.length} result${restaurants.length === 1 ? '' : 's'}
-                                for ${cuisine} in ${neighborhood}`;
-    }
+  DBHelper.fetchRestaurantByCuisineAndNeighborhood(cuisine, neighborhood)
+  .then(restaurants => {
+    resetRestaurants(restaurants);
+    fillRestaurantsHTML();
+    const liveAlert = document.getElementsByClassName('results-alert');
+    liveAlert[0].innerHTML = `${restaurants.length} result${restaurants.length === 1 ? '' : 's'}
+                              for ${cuisine} in ${neighborhood}`;
   })
+  .catch(console.error);
 }
 
 /**
