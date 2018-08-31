@@ -1,7 +1,7 @@
 
 const projectCacheName = 'restaurant-project-v4';
 const projectImgCacheName = 'restaurant-images-v4';
-const projectMapCacheName = 'restaurant-maps-v4';
+const projectMapCacheName = 'restaurant-maps-v4'; // aa
 const allCaches = [
   projectCacheName,
   projectImgCacheName,

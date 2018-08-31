@@ -16,19 +16,26 @@ class DBHelper {
    * Fetch all restaurants.
    */
   static getData(url, callback) {
-    fetch(url)
+    return fetch(url)
+    // .then(response => response.json())
     .then(function(response) {
-      response.json()
-      .then(data => callback(null, data));
+      if (!response.ok) {
+        console.log(response.clone());
+        const errMessage = `${response.status} : ${response.statusText}`;
+        return Promise.reject(errMessage);
+      }
+      return response.json();
     })
+    .then(restaurants => callback(null, restaurants))
     .catch(function(error) {
-      console.log(error);
-      callback(error, null);
+      const errMessage = `Fetch failed. Status : ${error}`;
+      console.log(errMessage);
+      callback(errMessage, null);
     });
   }
 
   static fetchRestaurants(callback) {
-    console.log("version 4");
+    console.log("version 10");
     this.getData(DBHelper.DATABASE_URL, callback);
     // fetch(DBHelper.DATABASE_URL)
     // .then(function(response) {
