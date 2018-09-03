@@ -66,6 +66,7 @@ class DBHelper {
    */
   static fetchRestaurantById(id) {
     // fetch all restaurants with proper error handling.
+
     return this.getData(`${DBHelper.DATABASE_URL}/${id}`);
 
     // this.fetchRestaurants((error, restaurants) => {

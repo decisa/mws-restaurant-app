@@ -78,6 +78,9 @@ fetchRestaurantFromURL = () => {
   .then(restaurant => {
     // save info about the restaurant
     self.restaurant = restaurant;
+    console.log(`rest #${id}:`, restaurant);
+
+
     fillRestaurantHTML();
     return restaurant;
   })

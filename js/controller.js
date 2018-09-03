@@ -1,3 +1,9 @@
+// import idb from 'idb';
+
+// let dbPromise = idb.open('mws-reviews', 1, function(upgradeDb) {
+//     upgradeDb.createObjectStore('restaurants', {keyPath: 'id'});
+// }); 
+
 if (navigator.serviceWorker) {
     window.addEventListener('load', function() {
         navigator.serviceWorker.register('/sw.js')
