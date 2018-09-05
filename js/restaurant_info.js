@@ -73,18 +73,27 @@ fetchRestaurantFromURL = () => {
     const error = 'No restaurant id in URL';
     return Promise.reject(error);
   }
+  console.log(typeof id);
   
   return DBHelper.fetchRestaurantById(id)
   .then(restaurant => {
     // save info about the restaurant
     self.restaurant = restaurant;
-    console.log(`rest #${id}:`, restaurant);
+    // console.log(`restik #${id}:`, restaurant);
+    // dbPromise
+    // .then(db => {
+    //   let tx = db.transaction('restaurants', 'readwrite');
+    //   let store  = tx.objectStore('restaurants');
+    //   store.put(restaurant);
+
+    //   return tx.complete;  
+    // });
 
 
     fillRestaurantHTML();
     return restaurant;
   })
-  .catch(console.error);
+  .catch(err => console.log(err));
 }
 
 /**

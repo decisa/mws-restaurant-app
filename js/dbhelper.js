@@ -22,18 +22,21 @@ class DBHelper {
       if (!response.ok) {
         console.log(response.clone());
         const errMessage = `${response.status} : ${response.statusText}`;
+        console.log('rejecting getData: response not Ok');
         return Promise.reject(errMessage);
       }
+      console.log('returning JSON: response Ok');
       return response.json();
     })
     .catch(function(error) {
+      console.log('caught error in getData');
       const errMessage = `getData error. Status : ${error}`;
       return Promise.reject(errMessage);
     });
   }
 
   static fetchRestaurants() {
-    console.log("version XXXXX");
+    console.log("version X2");
     return this.getData(DBHelper.DATABASE_URL);
     // fetch(DBHelper.DATABASE_URL)
     // .then(function(response) {
@@ -66,8 +69,8 @@ class DBHelper {
    */
   static fetchRestaurantById(id) {
     // fetch all restaurants with proper error handling.
-
-    return this.getData(`${DBHelper.DATABASE_URL}/${id}`);
+    const response = this.getData(`${DBHelper.DATABASE_URL}/${id}`);
+    return response;
 
     // this.fetchRestaurants((error, restaurants) => {
     //   if (error) {
