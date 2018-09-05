@@ -10,8 +10,15 @@ let optionID = 1;
  * Fetch neighborhoods and cuisines as soon as the page is loaded.
  */
 document.addEventListener('DOMContentLoaded', (event) => {
-  initMap(); // added
+  try {
+    initMap();
+  }
+  catch(error) {
+    console.log('unable to start maps', error);
+  }
+    // added
   console.log("document loaded");
+  updateRestaurants();
   fetchNeighborhoods();
   fetchCuisines();
   // updateRestaurants();
@@ -90,7 +97,7 @@ initMap = () => {
     id: 'mapbox.streets'
   }).addTo(newMap);
 
-  updateRestaurants();
+  
 }
 
 

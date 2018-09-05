@@ -1,7 +1,7 @@
 
-const projectCacheName = 'restaurant-project-v5';
-const projectImgCacheName = 'restaurant-images-v5';
-const projectMapCacheName = 'restaurant-maps-v5'; // 11sssss
+const projectCacheName = 'restaurant-project-v7';
+const projectImgCacheName = 'restaurant-images-v6';
+const projectMapCacheName = 'restaurant-maps-v6'; // 11ssssssss
 const allCaches = [
   projectCacheName,
   projectImgCacheName,
@@ -344,6 +344,7 @@ self.addEventListener('install', (event) => {
     '/js/dbhelper.js',
     '/js/restaurant_info.js',
     '/css/styles.css',
+    '/img/image-na.png',
     // '/data/restaurants.json',
     // 'http://weloveiconfonts.com/api/?family=entypo'
   ];
@@ -426,8 +427,10 @@ self.addEventListener('fetch', (event) => {
             return networkResponse;
           });
       })
-      .catch(() => {
-        console.log('error occured in dbPromise');
+      .catch(err => {
+        const error = `sw: you are offline or restaurantId#${id} does not exist.`;
+        // console.log(error);
+        return Promise.reject(error);
       })
     );
     return;
@@ -437,17 +440,19 @@ self.addEventListener('fetch', (event) => {
   if (requestUrl.pathname.includes('map')) {
     event.respondWith(
       caches.open(projectMapCacheName)
-        .then(cache => cache.match(requestUrl)
-          .then((response) => {
-            if (response) {
-              return response;
-            }
-            return fetch(event.request)
-              .then((networkResponse) => {
-                cache.put(requestUrl, networkResponse.clone());
-                return networkResponse;
-              });
-          })),
+      .then(cache => {
+        return cache.match(requestUrl)
+        .then((response) => {
+          if (response) {
+            return response;
+          }
+          return fetch(event.request)
+            .then((networkResponse) => {
+              cache.put(requestUrl, networkResponse.clone());
+              return networkResponse;
+            });
+        })
+      })
     );
     return;
   }
@@ -455,14 +460,20 @@ self.addEventListener('fetch', (event) => {
   // check if request is in cache and serve without caching
   event.respondWith(
     caches.match(requestUrl)
-      .then((cachedResponse) => {
-        if (cachedResponse) {
-          return cachedResponse;
-        }
-        // if not in cache, just fetch from network:
-        return fetch(event.request);
-      }),
-  );
+    .then((cachedResponse) => {
+      if (cachedResponse) {
+        return cachedResponse;
+      }
+      // if not in cache, just fetch from network:
+      return fetch(event.request)
+        .catch(err => {
+          const error = `sw: failed to fetch the rest ${requestUrl} ,error: ${err}.`;
+          console.log(error);
+          return Promise.reject(error);
+        });
+    })
+  )
+  ;
 });
 
 function servePhoto(request) {
@@ -480,8 +491,20 @@ function servePhoto(request) {
 
         return fetch(request)
           .then((networkResponse) => {
+            if (!networkResponse.ok) {
+              console.log('image not ok');
+              return Promise.reject();
+            }
             cache.put(storageURL, networkResponse.clone());
             return networkResponse;
+          })
+          .catch(() => {
+            return imageNotAvailable();
           });
       }));
+}
+
+function imageNotAvailable() {
+  return caches.open(projectCacheName)
+    .then(cache => cache.match('/img/image-na.png'));
 }

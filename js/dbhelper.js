@@ -1,6 +1,8 @@
 /**
  * Common database helper functions.
  */
+
+
 class DBHelper {
 
   /**
@@ -11,6 +13,8 @@ class DBHelper {
     const port = 1337; // Change this to your server port
     return `http://localhost:${port}/restaurants`;
   }
+
+  
 
   /**
    * Fetch all restaurants.
@@ -25,7 +29,6 @@ class DBHelper {
         console.log('rejecting getData: response not Ok');
         return Promise.reject(errMessage);
       }
-      console.log('returning JSON: response Ok');
       return response.json();
     })
     .catch(function(error) {
@@ -36,7 +39,6 @@ class DBHelper {
   }
 
   static fetchRestaurants() {
-    console.log("version X2");
     return this.getData(DBHelper.DATABASE_URL);
     // fetch(DBHelper.DATABASE_URL)
     // .then(function(response) {

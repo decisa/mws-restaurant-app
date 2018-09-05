@@ -213,6 +213,9 @@ nav#breadcrumb ol {
   min-height: 400px;
   width: 100%;
   background-color: #ccc;
+  a {
+    color: darkblue;
+  }
 }
 /* ====================== Restaurant Filtering ====================== */
 .filter-label {

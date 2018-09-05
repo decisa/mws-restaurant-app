@@ -184,6 +184,8 @@ nav#breadcrumb ol {
   min-height: 400px;
   width: 100%;
   background-color: #ccc; }
+  #map a {
+    color: darkblue; }
 
 /* ====================== Restaurant Filtering ====================== */
 .filter-label {
