@@ -1,5 +1,3 @@
-// import idb from 'idb';
-
 
 if (navigator.serviceWorker) {
     window.addEventListener('load', function() {

@@ -1,11 +1,9 @@
 
-const projectCacheName = 'restaurant-project-v4';
-const projectImgCacheName = 'restaurant-images-v4';
-// const projectMapCacheName = 'restaurant-maps-v15'; // 11ssssssssssssssssssssssssssss
+const projectCacheName = 'restaurant-project-v5';
+const projectImgCacheName = 'restaurant-images-v5';
 const allCaches = [
   projectCacheName,
   projectImgCacheName,
-//  projectMapCacheName,
 ];
 
 'use strict';
@@ -31,7 +29,7 @@ self.addEventListener('install', (event) => {
 
   event.waitUntil(
     caches.open(projectCacheName).then(cache => cache.addAll(urlsToCache)).then(() => {
-      console.log('everything cached OK!!!');
+    //  console.log('everything cached OK!!!');
     }).catch(() => {
       console.error('could not cache all files, aborting installation');
     }),
@@ -40,7 +38,7 @@ self.addEventListener('install', (event) => {
 
 
 self.addEventListener('activate', (event) => {
-  console.log('finishing activation .. deleting old caches');
+  // console.log('finishing activation .. deleting old caches');
   event.waitUntil(
     caches.keys().then((cacheNames) => {
       cacheNames.filter(name => name.startsWith('restaurant-') && (!allCaches.includes(name))).map(cacheName => caches.delete(cacheName));
@@ -67,26 +65,6 @@ self.addEventListener('fetch', (event) => {
       return;
     }
   }
-
-  // if (requestUrl.pathname.includes('map')) {
-  //   event.respondWith(
-  //     caches.open(projectMapCacheName)
-  //     .then(cache => {
-  //       return cache.match(requestUrl)
-  //       .then((response) => {
-  //         if (response) {
-  //           return response;
-  //         }
-  //         return fetch(event.request)
-  //           .then((networkResponse) => {
-  //             cache.put(requestUrl, networkResponse.clone());
-  //             return networkResponse;
-  //           });
-  //       })
-  //     })
-  //   );
-  //   return;
-  // }
 
   // check if request is in cache and serve without caching
   event.respondWith(
@@ -118,12 +96,11 @@ function servePhoto(request) {
           // return image from cache
           return cachedResponse;
         }
-        // console.log(`request = ${request.clone()}`);
 
         return fetch(request)
           .then((networkResponse) => {
             if (!networkResponse.ok) {
-              console.log('image not ok');
+              // fetching failed. most likely 404 error
               return Promise.reject();
             }
             cache.put(storageURL, networkResponse.clone());

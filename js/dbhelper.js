@@ -12,7 +12,6 @@ class DBHelper {
 
   /**
    * Database URL.
-   * Change this to restaurants.json file location on your server.
    */
   static get DATABASE_URL() {
     const port = 1337; // Change this to your server port
@@ -23,8 +22,6 @@ class DBHelper {
     return _dbPromise;
   }
 
-  
-
   /**
    * Promise based getData. No callbacks
    */
@@ -34,13 +31,11 @@ class DBHelper {
     .then(function(response) {
       if (!response.ok) {
         const errMessage = `${response.status} : ${response.statusText}`;
-        // console.log(`rejecting getData ${response.status}: response not Ok`);
         return Promise.reject(errMessage);
       }
       return response.json();
     })
     .catch(function(error) {
-      // console.log('caught error in getData');
       const errMessage = `getData error. Status : ${error}`;
       return Promise.reject(errMessage);
     });
@@ -50,44 +45,39 @@ class DBHelper {
    * Fetch all restaurants UPDATED.
    */
   static fetchRestaurants() {
-    // const dbPromise = idb.open('mws-restaurant', 1, function(upgradeDb) {
-    //   let restStore = upgradeDb.createObjectStore('restaurants', {keyPath: 'id'});
-    //   // restStore.createIndex('id', 'id');
-    // });
-
     return DBHelper.dbPromise
-    .then(db => {
-      const tx = db.transaction('restaurants');
-      const store = tx.objectStore('restaurants');
-      return store.getAll();
-    })
-    .then(restaurants => {
-      if (restaurants.length !== 0) {
-        console.log('served restaurants from DB');
-        return restaurants.map(i => i.data);
-      }
-      // if restaurants are not in DB yet, then reject the promise and fetch network inside catch
-      return Promise.reject('No restaurants in DB yet or DB error');
-    })
-    .catch(() => {
-      return this.getJsonData(DBHelper.DATABASE_URL)
-        .then(restaurants => {
-          DBHelper.dbPromise
-          .then(db => {
-            const tx = db.transaction('restaurants', 'readwrite');
-            const store = tx.objectStore('restaurants');
-            restaurants.forEach(restaurant => store.put({id: restaurant.id + '', data: restaurant}));
-            return tx.complete;
-          })
-          .then(() => {
-            console.log('all restaurants are added to DB v5');
-          })
-          .catch(() => {
-            console.log('there was an error while trying to add restaurants to DB');
+      .then(db => {
+        const tx = db.transaction('restaurants');
+        const store = tx.objectStore('restaurants');
+        return store.getAll();
+      })
+      .then(restaurants => {
+        if (restaurants.length !== 0) {
+          // console.log('served restaurants from DB');
+          return restaurants.map(i => i.data);
+        }
+        // if restaurants are not in DB yet, then reject the promise and fetch network inside catch
+        return Promise.reject('No restaurants in DB yet or DB error');
+      })
+      .catch(() => {
+        return this.getJsonData(DBHelper.DATABASE_URL)
+          .then(restaurants => {
+            DBHelper.dbPromise
+            .then(db => {
+              const tx = db.transaction('restaurants', 'readwrite');
+              const store = tx.objectStore('restaurants');
+              restaurants.forEach(restaurant => store.put({id: restaurant.id + '', data: restaurant}));
+              return tx.complete;
+            })
+            .then(() => {
+              // console.log('all restaurants are added to DB v5');
+            })
+            .catch(() => {
+              console.log('there was an error while trying to add restaurants to DB');
+            });
+            return restaurants;
           });
-          return restaurants;
-        });
-    });
+      });
   }
 
   /**
@@ -113,6 +103,7 @@ class DBHelper {
       });
   }
 
+  // returns JSON: restaurant does not exist
   static notFound() {
     const restaurantNotFound = {
       name: "Restaurant Not Found",
@@ -121,20 +112,6 @@ class DBHelper {
     return restaurantNotFound;
   }
 
-  /**
-   * Fetch restaurants by a cuisine type with proper error handling.
-   */
-  // static fetchRestaurantByCuisine(cuisine, callback) {
-  //   // Fetch all restaurants  with proper error handling
-  //   this.fetchRestaurants((error, restaurants)=> {
-  //     if (error) {
-  //       callback(error, null);
-  //     } else {
-  //       const results = restaurants.filter(rest => rest.cuisine_type === cuisine);
-  //       callback(null, results);
-  //     }
-  //   });
-  // }
   static fetchRestaurantByCuisine(cuisine) {
     // Fetch all restaurants  with proper error handling
     return this.fetchRestaurants()
@@ -185,7 +162,7 @@ class DBHelper {
       })
       .then(neighborhoods => {
         if (neighborhoods.data.length !== 0) {
-          console.log('neighborhoods list served from DB');
+          // console.log('neighborhoods list served from DB');
           return neighborhoods.data;
         }
         // if neighborhoods list is not found in DB need to create it in .catch
@@ -208,7 +185,7 @@ class DBHelper {
               return tx.complete;
             })
             .then(() => {
-              console.log('neighborhoods list added to DB');
+              // console.log('neighborhoods list added to DB');
             })
             .catch(() => {
               console.log('error adding neighborhoods list to DB');
@@ -230,7 +207,7 @@ class DBHelper {
       })
       .then(cuisines => {
         if (cuisines.data.length !== 0) {
-          console.log('cuisines list served from DB');
+          // console.log('cuisines list served from DB');
           return cuisines.data;
         }
         // if cuisines list is not found in DB need to create it in .catch
@@ -253,7 +230,7 @@ class DBHelper {
               return tx.complete;
             })
             .then(() => {
-              console.log('cuisines list added to DB');
+              // console.log('cuisines list added to DB');
             })
             .catch(() => {
               console.log('error adding cuisines list to DB');
@@ -281,8 +258,7 @@ class DBHelper {
   /**
    * Map marker for a restaurant.
    */
-  static mapMarkerForRestaurant(restaurant, map) {
-    // https://leafletjs.com/reference-1.3.0.html#marker  
+  static mapMarkerForRestaurant(restaurant, map) {  
     const marker = new L.marker([restaurant.latlng.lat, restaurant.latlng.lng],
     {
       title: restaurant.name,
@@ -292,14 +268,4 @@ class DBHelper {
     marker.addTo(newMap);
     return marker;
   } 
-//   static mapMarkerForRestaurant(restaurant, map) {
-//     const marker = new google.maps.Marker({
-//       position: restaurant.latlng,
-//       title: restaurant.name,
-//       url: this.urlForRestaurant(restaurant),
-//       map: map,
-//       animation: google.maps.Animation.DROP}
-//     );
-//     return marker;
-//   }
 }

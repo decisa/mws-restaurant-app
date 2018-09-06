@@ -1,9 +1,9 @@
 
 let restaurants,
   neighborhoods,
-  cuisines
-var map
-var markers = []
+  cuisines;
+var map;
+var markers = [];
 let optionID = 1;
 
 /**
@@ -14,6 +14,7 @@ document.addEventListener('DOMContentLoaded', (event) => {
     initMap();
   }
   catch(error) {
+    // if map is not loaded, display : maps offline
     const mapElement = document.getElementById('map')
     const image = document.createElement('img');
     image.className = 'restaurant-img';
@@ -22,12 +23,10 @@ document.addEventListener('DOMContentLoaded', (event) => {
     mapElement.append(image);
     console.log('unable to start maps', error);
   }
-    // added
-  console.log("document loaded");
+  // console.log("document loaded");
   updateRestaurants();
   fetchNeighborhoods();
   fetchCuisines();
-  // updateRestaurants();
 });
 
 
@@ -139,7 +138,6 @@ resetRestaurants = (restaurants) => {
   ul.innerHTML = '';
 
   // Remove all map markers
-  // self.markers.forEach(m => m.setMap(null));
   self.markers.forEach(m => m.remove());
   self.markers = [];
   self.restaurants = restaurants;
@@ -250,12 +248,3 @@ addMarkersToMap = (restaurants = self.restaurants) => {
     self.markers.push(marker);
   });
 }
-// addMarkersToMap = (restaurants = self.restaurants) => {
-//   restaurants.forEach(restaurant => {
-//     // Add marker to the map
-//     const marker = DBHelper.mapMarkerForRestaurant(restaurant, self.map);
-//     google.maps.event.addListener(marker, 'click', () => {
-//       window.location.href = marker.url
-//     });
-//     self.markers.push(marker);
-//   });

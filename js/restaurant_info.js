@@ -32,6 +32,7 @@ initMap = () => {
       DBHelper.mapMarkerForRestaurant(self.restaurant, self.newMap);
     }
     catch(error) {
+      // if map is not loaded, display : maps offline
       const mapElement = document.getElementById('map')
       const image = document.createElement('img');
       image.className = 'restaurant-img';
@@ -46,32 +47,6 @@ initMap = () => {
 } 
 
 
-
-/**
- * Initialize Google map, called from HTML.
-
-window.initMap = () => { 
-  fetchRestaurantFromURL((error, restaurant) => {
-    if (error) { // Got an error!
-      console.error(`fetchRestaurantFromUrl ${error}`);
-    } else {
-      // console.log('loading restaurant through Map');
-      self.map = new google.maps.Map(document.getElementById('map'), {
-        zoom: 16,
-        center: restaurant.latlng,
-        scrollwheel: false
-      });
-      fillBreadcrumb();
-      DBHelper.mapMarkerForRestaurant(self.restaurant, self.map);
-      google.maps.event.addListenerOnce(self.map, 'idle', function() {
-        document.getElementsByTagName('iframe')[0].title = "Google Maps Application";
-      });
-    }
-  });
-
-}
- */
-
 /**
  * Get current restaurant from page URL.
  */
@@ -84,23 +59,11 @@ fetchRestaurantFromURL = () => {
     const error = 'No restaurant id in URL';
     return Promise.reject(error);
   }
-  console.log(typeof id);
   
   return DBHelper.fetchRestaurantById(id)
   .then(restaurant => {
     // save info about the restaurant
     self.restaurant = restaurant;
-    // console.log(`restik #${id}:`, restaurant);
-    // dbPromise
-    // .then(db => {
-    //   let tx = db.transaction('restaurants', 'readwrite');
-    //   let store  = tx.objectStore('restaurants');
-    //   store.put(restaurant);
-
-    //   return tx.complete;  
-    // });
-
-
     fillRestaurantHTML();
     return restaurant;
   })
