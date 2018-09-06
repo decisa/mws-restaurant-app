@@ -14,6 +14,12 @@ document.addEventListener('DOMContentLoaded', (event) => {
     initMap();
   }
   catch(error) {
+    const mapElement = document.getElementById('map')
+    const image = document.createElement('img');
+    image.className = 'restaurant-img';
+    image.src = '/img/no-map.png';
+    image.alt = "Maps are offline";
+    mapElement.append(image);
     console.log('unable to start maps', error);
   }
     // added
@@ -95,29 +101,9 @@ initMap = () => {
       '<a href="https://creativecommons.org/licenses/by-sa/2.0/">CC-BY-SA</a>, ' +
       'Imagery © <a href="https://www.mapbox.com/">Mapbox</a>',
     id: 'mapbox.streets'
-  }).addTo(newMap);
-
-  
+  }).addTo(newMap);  
 }
 
-
-/**
- * Initialize Google map, called from HTML.
- */
-// window.initMap = () => {
-//   let loc = {
-//     lat: 40.722216,
-//     lng: -73.987501
-//   };
-//   self.map = new google.maps.Map(document.getElementById('map'), {
-//     zoom: 12,
-//     center: loc,
-//     scrollwheel: false
-//   });
-//   google.maps.event.addListenerOnce(self.map, 'idle', function() {
-//     document.getElementsByTagName('iframe')[0].title = "Google Maps";
-//   });
-// }
 
 /**
  * Update page and map for current restaurants.
@@ -169,7 +155,12 @@ fillRestaurantsHTML = (restaurants = self.restaurants) => {
     ul.append(createRestaurantHTML(restaurant, counter, restaurants.length));
     counter += 1;
   });
-  addMarkersToMap();
+  try {
+    addMarkersToMap();
+  }
+  catch(error) {
+    console.log('map is offline');
+  }
 }
 
 /**

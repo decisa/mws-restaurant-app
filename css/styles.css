@@ -1,5 +1,5 @@
 /* CSS Document */
-@import url(http://weloveiconfonts.com/api/?family=entypo);
+
 /* entypo */
 [class*="entypo-"]:before {
   font-family: 'entypo', sans-serif; }
@@ -183,7 +183,10 @@ nav#breadcrumb ol {
 #map {
   min-height: 400px;
   width: 100%;
+  text-align: center;
   background-color: #ccc; }
+  #map img {
+    max-width: 100%; }
   #map a {
     color: darkblue; }
 
@@ -312,6 +315,7 @@ nav#breadcrumb ol {
 .inside #map {
   background-color: #ccc;
   height: 100%;
+  text-align: center;
   width: 100%; }
 
 #restaurant-container {

@@ -5,8 +5,8 @@ var dataLoaded = false;
 /**
  * Initialize map as soon as the page is loaded.
  */
-document.addEventListener('DOMContentLoaded', (event) => {  
-  initMap();
+document.addEventListener('DOMContentLoaded', (event) => {
+    initMap();
 });
 
 /**
@@ -15,21 +15,32 @@ document.addEventListener('DOMContentLoaded', (event) => {
 initMap = () => {
   fetchRestaurantFromURL()
   .then(restaurant => {
-    self.newMap = L.map('map', {
-      center: [restaurant.latlng.lat, restaurant.latlng.lng],
-      zoom: 16,
-      scrollWheelZoom: false
-    });
-    L.tileLayer('https://api.tiles.mapbox.com/v4/{id}/{z}/{x}/{y}.jpg70?access_token={mapboxToken}', {
-      mapboxToken: config.mapBox,
-      maxZoom: 18,
-      attribution: 'Map data &copy; <a href="https://www.openstreetmap.org/">OpenStreetMap</a> contributors, ' +
-        '<a href="https://creativecommons.org/licenses/by-sa/2.0/">CC-BY-SA</a>, ' +
-        'Imagery © <a href="https://www.mapbox.com/">Mapbox</a>',
-      id: 'mapbox.streets'    
-    }).addTo(newMap);
+    try { 
+      self.newMap = L.map('map', {
+        center: [restaurant.latlng.lat, restaurant.latlng.lng],
+        zoom: 16,
+        scrollWheelZoom: false
+      });
+      L.tileLayer('https://api.tiles.mapbox.com/v4/{id}/{z}/{x}/{y}.jpg70?access_token={mapboxToken}', {
+        mapboxToken: config.mapBox,
+        maxZoom: 18,
+        attribution: 'Map data &copy; <a href="https://www.openstreetmap.org/">OpenStreetMap</a> contributors, ' +
+          '<a href="https://creativecommons.org/licenses/by-sa/2.0/">CC-BY-SA</a>, ' +
+          'Imagery © <a href="https://www.mapbox.com/">Mapbox</a>',
+        id: 'mapbox.streets'    
+      }).addTo(newMap);
+      DBHelper.mapMarkerForRestaurant(self.restaurant, self.newMap);
+    }
+    catch(error) {
+      const mapElement = document.getElementById('map')
+      const image = document.createElement('img');
+      image.className = 'restaurant-img';
+      image.src = '/img/no-map.png';
+      image.alt = "Maps are offline";
+      mapElement.append(image);
+      console.log('unable to start maps', error);
+    }
     fillBreadcrumb();
-    DBHelper.mapMarkerForRestaurant(self.restaurant, self.newMap);
   })
   .catch(console.error);
 } 
@@ -101,21 +112,26 @@ fetchRestaurantFromURL = () => {
  */
 fillRestaurantHTML = (restaurant = self.restaurant) => {
   const name = document.getElementById('restaurant-name');
-  name.innerHTML = restaurant.name;
+  name.innerHTML = restaurant.name || '';
 
   const address = document.getElementById('restaurant-address');
-  address.innerHTML = restaurant.address;
+  address.innerHTML = restaurant.address || '';
 
   const image = document.getElementById('restaurant-img');
-  let imgSrc = DBHelper.imageUrlForRestaurant(restaurant).replace(/\.[^/.]+$/, "");
-  image.srcset = `${imgSrc}-400-1x.jpg 400w, ${imgSrc}-800-2x.jpg 800w`;
-  image.sizes = '(min-width: 800px) 465px, (min-width: 640px) 50vw, (max-width: 639px) 98vw';  
-  image.src = `${imgSrc}-400-1x.jpg`;
+  let imgSrc = DBHelper.imageUrlForRestaurant(restaurant);
+  if (imgSrc.endsWith('.png')) {
+    image.src = imgSrc;
+  } else {
+    imgSrc = imgSrc.replace(/\.[^/.]+$/, "");
+    image.srcset = `${imgSrc}-400-1x.jpg 400w, ${imgSrc}-800-2x.jpg 800w`;
+    image.sizes = '(min-width: 800px) 465px, (min-width: 640px) 50vw, (max-width: 639px) 98vw';  
+    image.src = `${imgSrc}-400-1x.jpg`;
+  }
   image.alt = restaurant.name;
-  image.className = 'restaurant-img'
+  image.className = 'restaurant-img';
 
   const cuisine = document.getElementById('restaurant-cuisine');
-  cuisine.innerHTML = restaurant.cuisine_type;
+  cuisine.innerHTML = restaurant.cuisine_type || '';
 
   // fill operating hours
   if (restaurant.operating_hours) {
@@ -158,6 +174,7 @@ fillReviewsHTML = (reviews = self.restaurant.reviews) => {
   if (!reviews) {
     const noReviews = document.createElement('p');
     noReviews.innerHTML = 'No reviews yet!';
+    noReviews.className = 'review';
     container.appendChild(noReviews);
     return;
   }

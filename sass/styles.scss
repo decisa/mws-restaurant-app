@@ -1,6 +1,6 @@
 @charset "utf-8";
 /* CSS Document */
-@import url(http://weloveiconfonts.com/api/?family=entypo);
+
 
 /* entypo */
 [class*="entypo-"]:before {
@@ -212,7 +212,11 @@ nav#breadcrumb ol {
 #map {
   min-height: 400px;
   width: 100%;
+  text-align: center;
   background-color: #ccc;
+  img {
+    max-width: 100%;
+  }
   a {
     color: darkblue;
   }
@@ -358,6 +362,7 @@ nav#breadcrumb ol {
 .inside #map {
   background-color: #ccc;
   height: 100%;
+  text-align: center;
 
   width: 100%;
 }

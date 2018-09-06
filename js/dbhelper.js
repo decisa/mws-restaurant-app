@@ -2,7 +2,12 @@
  * Common database helper functions.
  */
 
-
+const _dbPromise = idb.open('mws-restaurant', 1, function(upgradeDb) {
+  const restStore = upgradeDb.createObjectStore('restaurants', {keyPath: 'id'});
+  const extraStore = upgradeDb.createObjectStore('extraInfo', {keyPath: 'name'});
+  // restStore.createIndex('id', 'id');
+});
+ 
 class DBHelper {
 
   /**
@@ -13,57 +18,76 @@ class DBHelper {
     const port = 1337; // Change this to your server port
     return `http://localhost:${port}/restaurants`;
   }
+  
+  static get dbPromise() {
+    return _dbPromise;
+  }
 
   
 
   /**
-   * Fetch all restaurants.
+   * Promise based getData. No callbacks
    */
-  static getData(url) {
+
+  static getJsonData(url) {
     return fetch(url)
-    // .then(response => response.json())
     .then(function(response) {
       if (!response.ok) {
-        console.log(response.clone());
         const errMessage = `${response.status} : ${response.statusText}`;
-        console.log('rejecting getData: response not Ok');
+        // console.log(`rejecting getData ${response.status}: response not Ok`);
         return Promise.reject(errMessage);
       }
       return response.json();
     })
     .catch(function(error) {
-      console.log('caught error in getData');
+      // console.log('caught error in getData');
       const errMessage = `getData error. Status : ${error}`;
       return Promise.reject(errMessage);
     });
   }
 
+  /**
+   * Fetch all restaurants UPDATED.
+   */
   static fetchRestaurants() {
-    return this.getData(DBHelper.DATABASE_URL);
-    // fetch(DBHelper.DATABASE_URL)
-    // .then(function(response) {
-    //   response.json()
-    //   .then(restaurants => callback(null, restaurants));
-    // })
-    // .catch(function(error) {
-    //   console.log(error);
-    //   callback(error, null);
+    // const dbPromise = idb.open('mws-restaurant', 1, function(upgradeDb) {
+    //   let restStore = upgradeDb.createObjectStore('restaurants', {keyPath: 'id'});
+    //   // restStore.createIndex('id', 'id');
     // });
 
-
-    // let xhr = new XMLHttpRequest();
-    // xhr.open('GET', DBHelper.DATABASE_URL);
-    // xhr.onload = () => {
-    //   if (xhr.status === 200) { // Got a success response from server!
-    //     const json = JSON.parse(xhr.responseText);
-    //     const restaurants = json;//.restaurants;
-    //     callback(null, restaurants);
-    //   } else { // Oops!. Got an error from server.
-    //     const error = (`Request failed. Returned status of ${xhr.status}`);
-    //     callback(error, null);
-    //   }
-    // };
-    // xhr.send();
+    return DBHelper.dbPromise
+    .then(db => {
+      const tx = db.transaction('restaurants');
+      const store = tx.objectStore('restaurants');
+      return store.getAll();
+    })
+    .then(restaurants => {
+      if (restaurants.length !== 0) {
+        console.log('served restaurants from DB');
+        return restaurants.map(i => i.data);
+      }
+      // if restaurants are not in DB yet, then reject the promise and fetch network inside catch
+      return Promise.reject('No restaurants in DB yet or DB error');
+    })
+    .catch(() => {
+      return this.getJsonData(DBHelper.DATABASE_URL)
+        .then(restaurants => {
+          DBHelper.dbPromise
+          .then(db => {
+            const tx = db.transaction('restaurants', 'readwrite');
+            const store = tx.objectStore('restaurants');
+            restaurants.forEach(restaurant => store.put({id: restaurant.id + '', data: restaurant}));
+            return tx.complete;
+          })
+          .then(() => {
+            console.log('all restaurants are added to DB v5');
+          })
+          .catch(() => {
+            console.log('there was an error while trying to add restaurants to DB');
+          });
+          return restaurants;
+        });
+    });
   }
 
   /**
@@ -71,22 +95,30 @@ class DBHelper {
    */
   static fetchRestaurantById(id) {
     // fetch all restaurants with proper error handling.
-    const response = this.getData(`${DBHelper.DATABASE_URL}/${id}`);
-    return response;
+    return DBHelper.dbPromise
+      .then(db => {
+        const store = db.transaction('restaurants').objectStore('restaurants');
+        return store.get(id);
+      })
+      .then(restaurant => {
+        if (restaurant)
+          return restaurant.data;
+        return Promise.reject(`Restaurant ID#${id} not found in DB`);
+      })
+      .catch(err => {
+        console.log(err);
+        // if restaurant ID not found in DB try fetching network:
+        return this.getJsonData(`${DBHelper.DATABASE_URL}/${id}`)
+          .catch(this.notFound);
+      });
+  }
 
-    // this.fetchRestaurants((error, restaurants) => {
-    //   if (error) {
-    //     callback(error, null);
-    //   } else {
-    //     // cannot use === in find, because r.id is a number , id is a string
-    //     const result = restaurants.find(r => r.id == id);
-    //     if (result) {
-    //       callback(null, result);
-    //     } else {
-    //       callback('Restaurant does not exist', null);
-    //     }
-    //   }
-    // });
+  static notFound() {
+    const restaurantNotFound = {
+      name: "Restaurant Not Found",
+      photograph: "rest-nf.png",
+    };
+    return restaurantNotFound;
   }
 
   /**
@@ -143,33 +175,93 @@ class DBHelper {
   }
 
   /**
-   * Fetch all neighborhoods with proper error handling.
+   * Fetch all neighborhoods from DB with proper error handling.
    */
   static fetchNeighborhoods() {
-    // Fetch all restaurants
-    return this.fetchRestaurants()
-    .then(restaurants => {
-      // Get all neighborhoods from all restaurants
-      const neighborhoods = restaurants.map((v, i) => restaurants[i].neighborhood);
-      // Remove duplicates from neighborhoods
-      const uniqueNeighborhoods = neighborhoods.filter((v, i) => neighborhoods.indexOf(v) === i);
-      return uniqueNeighborhoods;
-    });
+    return DBHelper.dbPromise
+      .then(db => {
+        const store = db.transaction('extraInfo').objectStore('extraInfo');
+        return store.get('neighborhoods');
+      })
+      .then(neighborhoods => {
+        if (neighborhoods.data.length !== 0) {
+          console.log('neighborhoods list served from DB');
+          return neighborhoods.data;
+        }
+        // if neighborhoods list is not found in DB need to create it in .catch
+        return Promise.reject('neighborhoods list is not in DB yet');
+      })
+      .catch(err => {
+        console.log(err);
+        return this.fetchRestaurants()
+          .then(restaurants => {
+            // Get all neighborhoods from all restaurants
+            const neighborhoods = restaurants.map((v, i) => restaurants[i].neighborhood);
+            // Remove duplicates from neighborhoods
+            const uniqueNeighborhoods = neighborhoods.filter((v, i) => neighborhoods.indexOf(v) === i);
+            // add neighborhoods list to DB:
+            DBHelper.dbPromise
+            .then(db => {
+              const tx = db.transaction('extraInfo', 'readwrite');
+              const store = tx.objectStore('extraInfo');
+              store.put({name: 'neighborhoods', data: uniqueNeighborhoods});
+              return tx.complete;
+            })
+            .then(() => {
+              console.log('neighborhoods list added to DB');
+            })
+            .catch(() => {
+              console.log('error adding neighborhoods list to DB');
+            });
+            return uniqueNeighborhoods;
+          });
+
+      });
   }
 
   /**
-   * Fetch all cuisines with proper error handling.
+   * Fetch all cuisines from DB with proper error handling.
    */
   static fetchCuisines() {
-    // Fetch all restaurants
-    return this.fetchRestaurants()
-    .then(restaurants => {
-      // Get all cuisines from all restaurants
-      const cuisines = restaurants.map((v, i) => restaurants[i].cuisine_type);
-      // Remove duplicates from cuisines
-      const uniqueCuisines = cuisines.filter((v, i) => cuisines.indexOf(v) === i);
-      return uniqueCuisines;
-    });
+    return DBHelper.dbPromise
+      .then(db => {
+        const store = db.transaction('extraInfo').objectStore('extraInfo');
+        return store.get('cuisines');
+      })
+      .then(cuisines => {
+        if (cuisines.data.length !== 0) {
+          console.log('cuisines list served from DB');
+          return cuisines.data;
+        }
+        // if cuisines list is not found in DB need to create it in .catch
+        return Promise.reject('cuisines list is not in DB yet');
+      })
+      .catch(err => {
+        console.log(err);
+        return this.fetchRestaurants()
+          .then(restaurants => {
+            // Get all cuisines from all restaurants
+            const cuisines = restaurants.map((v, i) => restaurants[i].cuisine_type);
+            // Remove duplicates from cuisines
+            const uniqueCuisines = cuisines.filter((v, i) => cuisines.indexOf(v) === i);
+            // add cuisines list to DB:
+            DBHelper.dbPromise
+            .then(db => {
+              const tx = db.transaction('extraInfo', 'readwrite');
+              const store = tx.objectStore('extraInfo');
+              store.put({name: 'cuisines', data: uniqueCuisines});
+              return tx.complete;
+            })
+            .then(() => {
+              console.log('cuisines list added to DB');
+            })
+            .catch(() => {
+              console.log('error adding cuisines list to DB');
+            });
+            return uniqueCuisines;
+          });
+
+      });
   }
 
   /**
