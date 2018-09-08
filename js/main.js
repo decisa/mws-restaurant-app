@@ -176,6 +176,9 @@ createRestaurantHTML = (restaurant, current, total) => {
   name.innerHTML = restaurant.name;
   li.append(name);
 
+  const imageHolder = document.createElement('div');
+  imageHolder.className = 'image-holder';
+
   const picture = document.createElement('picture');
   picture.className = 'restaurant-img';
   let imgSrc = DBHelper.imageUrlForRestaurant(restaurant).replace(/\.[^/.]+$/, "");
@@ -209,9 +212,25 @@ createRestaurantHTML = (restaurant, current, total) => {
   image.src = `${imgSrc}-400-1x.jpg`;
   image.alt = restaurant.name;
   picture.append(image);
+  imageHolder.append(picture);
+  const heartIcon = document.createElement('i');
+  heartIcon.innerHTML = '&hearts;';  
+  heartIcon.dataset.id = restaurant.id;
 
+  console.log(`${restaurant.name} id : ${restaurant.id} (${typeof restaurant.id}), is fav : ${restaurant.is_favorite} (${typeof restaurant.is_favorite})`);
 
-  li.append(picture);
+  if (restaurant.is_favorite === true || restaurant.is_favorite === 'true') {
+    heartIcon.dataset.fav = "yes";
+    heartIcon.className = 'heart';
+  }
+  else {
+    heartIcon.className = 'no-heart';
+    heartIcon.dataset.fav = "no";
+  }
+  heartIcon.onclick = onHeartClick;
+  imageHolder.append(heartIcon);
+
+  li.append(imageHolder);
 
   const neighborhood = document.createElement('p');
   neighborhood.innerHTML = restaurant.neighborhood;
@@ -233,6 +252,55 @@ createRestaurantHTML = (restaurant, current, total) => {
 
   return li;
 }
+
+onHeartClick = (event) => {
+  const icon = event.target;
+  const restaurantId = icon.dataset.id;
+  
+
+  if (icon.dataset.fav === 'yes') {
+    icon.dataset.fav = 'no';
+    icon.className = 'no-heart';
+    changeFavorite(restaurantId, false);  
+  } else {
+    icon.dataset.fav = 'yes';
+    icon.className = 'heart';
+    changeFavorite(restaurantId, true);
+  }
+  // changeFavorite(restaurantId, true);
+
+  // event.target.className = event.target.className === 'heart' ? 'no-heart' : 'heart';
+}
+
+changeFavorite = (restaurantId, newFavFlag) => {
+  DBHelper.fetchRestaurantById(restaurantId)
+  .then(restaurant => {
+    console.log(typeof restaurant.is_favorite, restaurant.is_favorite, newFavFlag);
+    let updatedRecord = restaurant;
+    updatedRecord.is_favorite = newFavFlag;
+
+    DBHelper.updateRestaurantDB(restaurantId, updatedRecord)
+    .then(() => {
+      console.log('db Updated');
+    })
+    .catch((err) => {
+      console.log('db Update error', err);
+    });
+
+
+
+    let requestUrl = `http://localhost:1337/restaurants/${restaurantId}/?is_favorite=${newFavFlag}`;
+    fetch(requestUrl, {method: 'PUT'})
+    .then(response => {
+      console.log('all good', response);
+    })
+    .catch(err => {
+      console('error:', err);
+    })
+
+
+  });
+} 
 
 /**
  * Add markers for current restaurants to the map.

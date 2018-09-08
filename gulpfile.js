@@ -1,10 +1,6 @@
 var gulp = require('gulp');
 var sass = require('gulp-sass');
 
-browserSync.init({
-  server: "./"
-});
-
 
 gulp.task('default', function(done) {
   return gulp.watch('./sass/**/*.scss', gulp.parallel('styles'));

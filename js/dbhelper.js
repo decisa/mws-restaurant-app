@@ -60,23 +60,30 @@ class DBHelper {
         return Promise.reject('No restaurants in DB yet or DB error');
       })
       .catch(() => {
-        return this.getJsonData(DBHelper.DATABASE_URL)
-          .then(restaurants => {
-            DBHelper.dbPromise
-            .then(db => {
-              const tx = db.transaction('restaurants', 'readwrite');
-              const store = tx.objectStore('restaurants');
-              restaurants.forEach(restaurant => store.put({id: restaurant.id + '', data: restaurant}));
-              return tx.complete;
-            })
-            .then(() => {
-              // console.log('all restaurants are added to DB v5');
-            })
-            .catch(() => {
-              console.log('there was an error while trying to add restaurants to DB');
-            });
-            return restaurants;
-          });
+        return this.getRestaurantsFromServer();
+      });
+  }
+
+  /**
+   * Helper function to sync server DB with local DB
+   */
+  static getRestaurantsFromServer() {
+    return this.getJsonData(DBHelper.DATABASE_URL)
+      .then(restaurants => {
+        DBHelper.dbPromise
+        .then(db => {
+          const tx = db.transaction('restaurants', 'readwrite');
+          const store = tx.objectStore('restaurants');
+          restaurants.forEach(restaurant => store.put({id: restaurant.id + '', data: restaurant}));
+          return tx.complete;
+        })
+        .then(() => {
+          console.log('all restaurants are added to DB');
+        })
+        .catch(() => {
+          console.log('there was an error while trying to add restaurants to DB');
+        });
+        return restaurants;
       });
   }
 
@@ -267,5 +274,15 @@ class DBHelper {
     })
     marker.addTo(newMap);
     return marker;
-  } 
+  }
+  
+  static updateRestaurantDB(restaurantId, newRecord) {
+    return this.dbPromise
+      .then(db => {
+        const tx = db.transaction('restaurants', 'readwrite');
+        const store = tx.objectStore('restaurants');
+        store.put({id: restaurantId + '', data: newRecord});
+        return tx.complete;
+      });
+  }
 }

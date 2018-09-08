@@ -1,6 +1,6 @@
 
 const projectCacheName = 'restaurant-project-v5';
-const projectImgCacheName = 'restaurant-images-v5';
+const projectImgCacheName = 'restaurant-images-v5'; // gsss
 const allCaches = [
   projectCacheName,
   projectImgCacheName,
@@ -22,6 +22,7 @@ self.addEventListener('install', (event) => {
     '/css/styles.css',
     '/css/entypo.min.css',  
     '/img/image-na.png',
+    '/fonts/entypo.woff',
   ];
 
   // add restaurant-not-available image to cache in the background:
