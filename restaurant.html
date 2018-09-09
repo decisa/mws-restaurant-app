@@ -47,7 +47,9 @@
     <!-- End map -->
     <!-- Beginning restaurant -->
     <section id="restaurant-container">
-      <h2 id="restaurant-name"></h2>
+      <div id="name-wrapper"> 
+        <h2 id="restaurant-name"></h2>
+      </div>
       <p id="restaurant-address" class="address entypo-location"></p>
       <img id="restaurant-img">
       <p id="restaurant-cuisine"></p>
@@ -57,6 +59,28 @@
     <!-- end restaurant -->
     <!-- Beginning reviews -->
     <section id="reviews-container">
+      <div class="reviews-form">
+        <form id="reviews-form" method="POST">
+          <input type="hidden" id="restaurantID" name="restaurant_id" value="">
+          <label for="name">Your name: </label><input type="text" id="name" name="name" placeholder="please enter your name"><br>
+          <label for="rating">Choose your rating: </label>
+          <select id="rating" name="rating">
+            <option value="0">Rate the Restaurant</option>
+            <option value="1">1</option>
+            <option value="2">2</option>
+            <option value="3">3</option>
+            <option value="4">4</option>
+            <option value="5">5</option>
+          </select>
+          <br>
+          <label for="reviews">Share your thoughts about this place: </label><br>
+          <textarea id="reviews" rows="4" cols="50" name="reviews" placeholder="Please enter your review here"></textarea>
+          <br>
+          <input class="btn btn-blue" type="submit" value="submit">
+        </form>
+        <div id="message"></div>
+      </div>
+      <h3>Reviews</h3>
       <ul id="reviews-list"></ul>
     </section>
     <!-- End reviews -->

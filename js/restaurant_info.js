@@ -6,14 +6,101 @@ var dataLoaded = false;
  * Initialize map as soon as the page is loaded.
  */
 document.addEventListener('DOMContentLoaded', (event) => {
-    initMap();
+    initMap()
+    .then(() => {
+      const reviewForm = document.getElementById("reviews-form");
+      const inputID = document.getElementById('restaurantID');
+      inputID.value = restaurant.id;
+
+      reviewForm.addEventListener('submit', submitReview);
+    });
 });
+
+submitReview = (event) => {
+  event.preventDefault();
+  const inputId = document.getElementById('restaurantID');
+  const inputName = document.getElementById('name');
+  const inputRating = document.getElementById('rating');
+  const inputReview = document.getElementById('reviews');
+  const message = document.getElementById('message');
+
+  if (inputName.value === '') {
+    message.innerHTML = 'Please enter your name';
+    addRedBorder(inputName);
+    return;
+  }
+  if (inputRating.value === '0') {
+    message.innerHTML = 'Need to select rating !';
+    addRedBorder(inputRating);
+    return;
+  }
+  if (inputReview.value === '') {
+    message.innerHTML = 'Cannot submit without review. Please add a few words !';
+    addRedBorder(inputReview);
+    return;
+  }
+
+
+  
+  const reviewData = {
+    restaurant_id: parseInt(inputId.value),
+    name: inputName.value,
+    rating: inputRating.value,
+    comments: inputReview.value,
+  };
+
+  // UPLOAD the review to server :
+  fetch(DBHelper.REVIEWS_URL, {method: 'POST', body: JSON.stringify(reviewData)})
+  .then(response => {
+    response.clone().json()
+    .then(newReview => console.log('new review : ', newReview))
+    .catch(err => console.log('catch new review : ', err));
+
+    if (!response.ok) {
+      const err = `unable to upload review to the server. error ${response.status}. desription: ${response.statusText}`;
+      return Promise.reject(err);
+    }
+
+    // time to sync localDB with server:
+    DBHelper.fetchRestaurantReviews(reviewData.restaurant_id, true)
+    .then(_ => {
+      console.log('localDB updated with new reviews');
+      // refresh reviews:
+      console.log('refreshing page');
+      fillReviewsHTML();
+    })
+    .catch(_ => {console.log('localDB updated with new reviews')});
+    // console.log('review uploaded ', reviewData);
+
+    // reset form on successfull completion
+    console.log('resetting form');
+    document.getElementById('reviews-form').reset();
+    document.getElementById('message').innerHTML = "review successfully submited";
+    
+  })
+  .catch(_ => {
+    console.log("error uploading ", _);
+  });
+}
+
+
+
+addRedBorder = (element) => {
+  element.classList.add('red-border');
+  element.addEventListener('focus', removeRedBorder);
+}
+
+removeRedBorder = (event) => {
+  event.target.classList.remove('red-border');
+  event.target.removeEventListener('focus', removeRedBorder);
+  document.getElementById('message').innerHTML = '';
+}
 
 /**
  * Initialize leaflet map
  */
 initMap = () => {
-  fetchRestaurantFromURL()
+  return fetchRestaurantFromURL()
   .then(restaurant => {
     try { 
       self.newMap = L.map('map', {
@@ -74,8 +161,13 @@ fetchRestaurantFromURL = () => {
  * Create restaurant HTML and add it to the webpage
  */
 fillRestaurantHTML = (restaurant = self.restaurant) => {
+  const nameWrapper = document.getElementById('name-wrapper');
+
   const name = document.getElementById('restaurant-name');
   name.innerHTML = restaurant.name || '';
+
+  const heartIcon = favoriteIcon(restaurant);
+  nameWrapper.append(heartIcon);
 
   const address = document.getElementById('restaurant-address');
   address.innerHTML = restaurant.address || '';
@@ -101,7 +193,44 @@ fillRestaurantHTML = (restaurant = self.restaurant) => {
     fillRestaurantHoursHTML();
   }
   // fill reviews
-  fillReviewsHTML();
+  fillReviewsHTML(restaurant.id);
+}
+
+/**
+ * Create Favorite icon for a specific restaurant
+ */
+favoriteIcon = (restaurant) => {
+  let icon = document.createElement('i');
+  icon.innerHTML = '&hearts;';  
+  icon.dataset.id = restaurant.id;
+
+  if (restaurant.is_favorite === true || restaurant.is_favorite === 'true') {
+    icon.dataset.fav = "yes";
+    icon.className = 'heart';
+  }
+  else {
+    icon.className = 'no-heart';
+    icon.dataset.fav = "no";
+  }
+  icon.onclick = onHeartClick;
+
+  return icon;
+}
+
+onHeartClick = (event) => {
+  const icon = event.target;
+  const restaurantId = icon.dataset.id;
+  
+
+  if (icon.dataset.fav === 'yes') {
+    icon.dataset.fav = 'no';
+    icon.className = 'no-heart';
+    DBHelper.changeFavorite(restaurantId, false);  
+  } else {
+    icon.dataset.fav = 'yes';
+    icon.className = 'heart';
+    DBHelper.changeFavorite(restaurantId, true);
+  }
 }
 
 /**
@@ -128,25 +257,27 @@ fillRestaurantHoursHTML = (operatingHours = self.restaurant.operating_hours) => 
 /**
  * Create all reviews HTML and add them to the webpage.
  */
-fillReviewsHTML = (reviews = self.restaurant.reviews) => {
-  const container = document.getElementById('reviews-container');
-  const title = document.createElement('h3');
-  title.innerHTML = 'Reviews';
-  container.appendChild(title);
+fillReviewsHTML = (id = restaurant.id) => {
+  DBHelper.fetchRestaurantReviews(id)
+  .then(reviews => {
+    const ul = document.getElementById('reviews-list');
+    ul.innerHTML = '';
 
-  if (!reviews) {
-    const noReviews = document.createElement('p');
-    noReviews.innerHTML = 'No reviews yet!';
-    noReviews.className = 'review';
-    container.appendChild(noReviews);
-    return;
-  }
-  const ul = document.getElementById('reviews-list');
-  reviews.forEach(review => {
-    ul.appendChild(createReviewHTML(review));
+    if (!reviews) {
+      const noReviews = document.createElement('li');
+      noReviews.innerHTML = 'No reviews yet!';
+      noReviews.className = 'review';
+      ul.appendChild(noReviews);
+      return;
+    }
+    
+    reviews.forEach(review => {
+      ul.appendChild(createReviewHTML(review));
+    });
   });
-  container.appendChild(ul);
 }
+
+// addNewReview(data)
 
 /**
  * Create review HTML and add it to the webpage.
@@ -159,7 +290,13 @@ createReviewHTML = (review) => {
   li.appendChild(name);
 
   const date = document.createElement('p');
-  date.innerHTML = review.date;
+  // can compare updatedAt and createdAt and let user know if the review is updated or original
+  const dateOfReview = new Date(review.updatedAt);
+  date.innerHTML = '';
+  if (review.createdAt != review.updatedAt) {
+    date.innerHTML = 'updated ';
+  }
+  date.innerHTML += dateOfReview.toDateString();
   date.className = 'date';
   li.appendChild(date);
 

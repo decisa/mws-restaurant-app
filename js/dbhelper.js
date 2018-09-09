@@ -2,10 +2,19 @@
  * Common database helper functions.
  */
 
-const _dbPromise = idb.open('mws-restaurant', 1, function(upgradeDb) {
-  const restStore = upgradeDb.createObjectStore('restaurants', {keyPath: 'id'});
-  const extraStore = upgradeDb.createObjectStore('extraInfo', {keyPath: 'name'});
-  // restStore.createIndex('id', 'id');
+const _dbPromise = idb.open('mws-restaurant', 2, function(upgradeDb) {
+  switch (upgradeDb.oldVersion) {
+    case 0:
+      const restStore = upgradeDb.createObjectStore('restaurants', {keyPath: 'id'});
+      const extraStore = upgradeDb.createObjectStore('extraInfo', {keyPath: 'name'});
+      // restStore.createIndex('id', 'id');
+    case 1:
+      const reviewsStore = upgradeDb.createObjectStore('reviews', {keyPath: 'id'});
+      const networkQueue = upgradeDb.createObjectStore('networkQueue', {keyPath: 'id', autoIncrement: true});
+      reviewsStore.createIndex('by-restaurant', 'restaurant_id');
+      // reviewsStore.createIndex('by-time', 'updatedAt');
+
+  }
 });
  
 class DBHelper {
@@ -16,6 +25,11 @@ class DBHelper {
   static get DATABASE_URL() {
     const port = 1337; // Change this to your server port
     return `http://localhost:${port}/restaurants`;
+  }
+
+  static get REVIEWS_URL() {
+    const port = 1337; // Change this to your server port
+    return `http://localhost:${port}/reviews`;
   }
   
   static get dbPromise() {
@@ -285,4 +299,108 @@ class DBHelper {
         return tx.complete;
       });
   }
+
+  static fetchRestaurantReviews(restaurantId, forceNetwork = false) {
+    return this.dbPromise
+      .then(db => {
+        if (forceNetwork) return Promise.reject('network fetch requested');
+
+        const reviews = db.transaction('reviews').objectStore('reviews');
+        const reviewsIndex = reviews.index('by-restaurant');
+        return reviewsIndex.getAll(restaurantId);
+      })
+      .then(dbReviews => {
+        if (!dbReviews.length) {
+          const err = 'no reviews found in DB ' + dbReviews.length;
+          // reviews not found, we will fetch reviews from server in .catch()
+          return Promise.reject(err);
+        }
+        console.log('found reviews in DB', dbReviews.length);
+        return dbReviews.reverse();
+      })
+      .catch(err => {
+        console.log('my error', err);
+        const reviewsRequest = `${DBHelper.REVIEWS_URL}/?restaurant_id=${restaurantId}`;
+        return this.getJsonData(reviewsRequest)
+          .then(networkReviews => {
+            this.dbPromise
+              .then(db => {
+                const tx = db.transaction('reviews', 'readwrite');
+                const store = tx.objectStore('reviews');
+                networkReviews.forEach(review => store.put(review));
+                return tx.complete;
+              })
+              .then(_ => console.log('reviews added'))
+              .catch(_ => console.log('error adding reviews'));
+            return networkReviews;
+          });
+      });
+  }
+
+  // v v v do I NEED THESE TWO ?? v v v CHECK !
+  static addNewReviewLocalDB(review) {
+    if (!review) {
+      return Promise.reject('no review to add');
+    }
+    return this.dbPromise
+      .then(db => {
+        const tx = db.transaction('reviews', 'readwrite');
+        const store = tx.objectStore('reviews');
+        console.log('review : ', review);
+        store.put(review);
+        return tx.complete;
+      });
+  }
+
+  /*
+   * Helper function that searches server's DB for the id of a newly added review
+   */
+  static newReviewID(reviewInfo) {
+    const restaurantId = reviewInfo.restaurant_id;
+    return this.fetchRestaurantReviews(restaurantId,)
+      .then(networkReviews => {
+        if (!networkReviews) {
+          const err = 'reviews not found ' + networkReviews;
+          console.log(err);
+          return Promise.reject(err);
+        }
+        console.log('network reviews : ', networkReviews);
+        console.log('review to find : ', reviewInfo);
+        let matchingReviews = networkReviews.filter(review => (review.name === reviewInfo.name) && 
+            (review.rating === reviewInfo.rating) &&
+            (review.reviews === reviewInfo.reviews));
+        return matchingReviews;
+      });
+  }
+
+  static changeFavorite(restaurantId, newFavFlag) {
+    this.fetchRestaurantById(restaurantId)
+    .then(restaurant => {
+      console.log(typeof restaurant.is_favorite, restaurant.is_favorite, newFavFlag);
+      let updatedRecord = restaurant;
+      updatedRecord.is_favorite = newFavFlag;
+  
+      DBHelper.updateRestaurantDB(restaurantId, updatedRecord)
+      .then(() => {
+        console.log('db Updated');
+      })
+      .catch((err) => {
+        console.log('db Update error', err);
+      });
+ 
+      let requestUrl = `http://localhost:1337/restaurants/${restaurantId}/?is_favorite=${newFavFlag}`;
+      fetch(requestUrl, {method: 'PUT'})
+      .then(response => {
+        console.log('all good', response);
+      })
+      .catch(err => {
+        console('error:', err);
+      })
+  
+  
+    });
+  } 
+
 }
+
+

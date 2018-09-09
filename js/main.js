@@ -27,7 +27,21 @@ document.addEventListener('DOMContentLoaded', (event) => {
   updateRestaurants();
   fetchNeighborhoods();
   fetchCuisines();
+
+  // add online/offline notification
+  window.addEventListener('online', updateNetworkStatus);
+  window.addEventListener('offline', updateNetworkStatus);
+  updateNetworkStatus();
 });
+
+updateNetworkStatus = () => {
+  let networkStatus = navigator.onLine ? 'online' : 'offline';
+  const statusLabel = document.getElementById('status');
+
+  statusLabel.innerHTML = networkStatus.toUpperCase();
+  statusLabel.className = networkStatus;
+  console.log('new network status: ', networkStatus);
+}
 
 
 
@@ -261,46 +275,15 @@ onHeartClick = (event) => {
   if (icon.dataset.fav === 'yes') {
     icon.dataset.fav = 'no';
     icon.className = 'no-heart';
-    changeFavorite(restaurantId, false);  
+    DBHelper.changeFavorite(restaurantId, false);  
   } else {
     icon.dataset.fav = 'yes';
     icon.className = 'heart';
-    changeFavorite(restaurantId, true);
+    DBHelper.changeFavorite(restaurantId, true);
   }
-  // changeFavorite(restaurantId, true);
-
-  // event.target.className = event.target.className === 'heart' ? 'no-heart' : 'heart';
 }
 
-changeFavorite = (restaurantId, newFavFlag) => {
-  DBHelper.fetchRestaurantById(restaurantId)
-  .then(restaurant => {
-    console.log(typeof restaurant.is_favorite, restaurant.is_favorite, newFavFlag);
-    let updatedRecord = restaurant;
-    updatedRecord.is_favorite = newFavFlag;
 
-    DBHelper.updateRestaurantDB(restaurantId, updatedRecord)
-    .then(() => {
-      console.log('db Updated');
-    })
-    .catch((err) => {
-      console.log('db Update error', err);
-    });
-
-
-
-    let requestUrl = `http://localhost:1337/restaurants/${restaurantId}/?is_favorite=${newFavFlag}`;
-    fetch(requestUrl, {method: 'PUT'})
-    .then(response => {
-      console.log('all good', response);
-    })
-    .catch(err => {
-      console('error:', err);
-    })
-
-
-  });
-} 
 
 /**
  * Add markers for current restaurants to the map.

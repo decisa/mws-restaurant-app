@@ -1,10 +1,61 @@
-@charset "utf-8";
 /* CSS Document */
-
-
 /* entypo */
 [class*="entypo-"]:before {
-  font-family: 'entypo', sans-serif; 
+  font-family: 'entypo', sans-serif; }
+
+#name-wrapper {
+  width: 100%;
+  position: relative; 
+}
+
+#status {
+  position: absolute;
+  top: 1px;
+  right: 5px;
+  font-size: 10px; 
+}
+
+.online {
+  color: limegreen; 
+}
+
+.offline {
+  color: red; 
+}
+
+.reviews-form {
+  background-color: white;
+  box-sizing: border-box;
+  margin: 5px auto;
+  padding: 10px;
+  max-width: 790px; 
+  position: relative;
+}
+
+#message {
+  position: absolute;
+  bottom: 10px;
+  left: 12px;
+  color: #42464f;
+}
+
+.red-border {
+  box-shadow: 0px 0px 2px 2px red; 
+}
+
+.btn {
+  padding: 10px 25px;
+  margin: 5px 0px 20px 0px;  
+  font-size: 18px; 
+}
+
+.btn-blue {
+  background-color: #42464f;
+  color: white;
+}
+
+.btn-blue:hover {
+  background-color: #252831;
 }
 
 .image-holder {
@@ -432,7 +483,7 @@ nav#breadcrumb ol {
   font-weight: 200;
   letter-spacing: 1px;
   text-transform: uppercase;
-  line-height: 1.1;
+  line-height: 1.2;
 }
 
 #restaurant-img {
@@ -590,7 +641,7 @@ nav#breadcrumb ol {
     box-sizing: content-box;
   }
 
-  #restaurant-name {
+  #name-wrapper {
     grid-column: span 2; 
   }
   #restaurant-address {
