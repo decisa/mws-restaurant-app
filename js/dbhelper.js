@@ -337,6 +337,57 @@ class DBHelper {
       });
   }
 
+  static addToNetworkQueue(data){
+    return this.dbPromise
+      .then(db => {
+        const tx = db.transaction('networkQueue', 'readwrite');
+        const store = tx.objectStore('networkQueue');
+        store.put({review: data});
+        return tx.complete;
+      });
+  }
+
+  static uploadFromQueue() {
+    return this.dbPromise
+      .then(db => {
+        const tx = db.transaction('networkQueue', 'readwrite');
+        const store = tx.objectStore('networkQueue');
+        return store.openCursor();
+      })
+      .then(function processQueue(cursor) {
+        if (!cursor) {
+          return 'finished looping through the Queue';
+        }
+        const reviewToUpload = cursor.value.review;
+        DBHelper.uploadReview(reviewToUpload)
+          .then(response => {
+            if (!response.ok) {
+              // server error. Need to re-add review to networkQueue. reject promise
+              // and take care of re-adding in .catch
+              const err = 'unable to upload : ' + reviewToUpload;
+              return Promise.reject(err);
+            }
+            // uploaded fine . delete the entry at the cursor
+            console.log('review uploaded to server : ', reviewToUpload) 
+          })
+          .catch(err => {
+            // since idb transaction supports only microtransactions (no async calls)
+            // by this time transaction is closed. so need to add review back to queue
+            console.log('uploadFromQueue >> uploadReview : ', err);
+            DBHelper.addToNetworkQueue(reviewToUpload);
+          });
+        cursor.delete();
+        return cursor.continue().then(processQueue);
+      })
+      // .catch(err => {
+      //   console.log('unable to clear the network queue ', err);
+      // });
+  }
+
+  static uploadReview(review) {
+    return fetch(DBHelper.REVIEWS_URL, {method: 'POST', body: JSON.stringify(review)});
+  }
+
   // v v v do I NEED THESE TWO ?? v v v CHECK !
   static addNewReviewLocalDB(review) {
     if (!review) {

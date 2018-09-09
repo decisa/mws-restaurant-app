@@ -1,4 +1,5 @@
 var restaurant;
+
 var map;
 var dataLoaded = false;
 
@@ -11,10 +12,44 @@ document.addEventListener('DOMContentLoaded', (event) => {
       const reviewForm = document.getElementById("reviews-form");
       const inputID = document.getElementById('restaurantID');
       inputID.value = restaurant.id;
+      restaurantID = restaurant
 
       reviewForm.addEventListener('submit', submitReview);
+      // add online/offline notification
+      window.addEventListener('online', updateNetworkStatus);
+      window.addEventListener('offline', updateNetworkStatus);
+      updateNetworkStatus();
     });
 });
+
+
+updateNetworkStatus = () => {
+let networkStatus = navigator.onLine ? 'online' : 'offline';
+const statusLabel = document.getElementById('status');
+
+statusLabel.innerHTML = networkStatus.toUpperCase();
+statusLabel.className = networkStatus;
+console.log('new network status: ', networkStatus);
+
+if (networkStatus === 'online') {
+  DBHelper.uploadFromQueue()
+  .then(_ => {
+    console.log('finished going through queue');
+    // time to sync localDB with server:
+    console.log('fetching for restaurant #', restaurant.id);
+    DBHelper.fetchRestaurantReviews(restaurant.id, true)
+    .then(_ => {
+      console.log('localDB updated with new reviews');
+      // refresh reviews:
+      console.log('refreshing page');
+      fillReviewsHTML();
+    })
+    .catch(_ => {console.log('localDB updated with new reviews')});
+
+  })
+  .catch(err => console.log('error : ', err));
+}
+}
 
 submitReview = (event) => {
   event.preventDefault();
@@ -52,9 +87,9 @@ submitReview = (event) => {
   // UPLOAD the review to server :
   fetch(DBHelper.REVIEWS_URL, {method: 'POST', body: JSON.stringify(reviewData)})
   .then(response => {
-    response.clone().json()
-    .then(newReview => console.log('new review : ', newReview))
-    .catch(err => console.log('catch new review : ', err));
+    // response.clone().json()
+    // .then(newReview => console.log('new review : ', newReview))
+    // .catch(err => console.log('catch new review : ', err));
 
     if (!response.ok) {
       const err = `unable to upload review to the server. error ${response.status}. desription: ${response.statusText}`;
@@ -78,8 +113,12 @@ submitReview = (event) => {
     document.getElementById('message').innerHTML = "review successfully submited";
     
   })
-  .catch(_ => {
-    console.log("error uploading ", _);
+  .catch(err => {
+    // could not upload review to server or server replied with bad status
+    // need to put the review into queue for upload
+    DBHelper.addToNetworkQueue(reviewData)
+    .then(_ => console.log('added to network queue :', reviewData))
+    .catch(_ => console.log('error adding to queue ', reviewData));
   });
 }
 
