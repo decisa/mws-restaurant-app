@@ -116,9 +116,14 @@ submitReview = (event) => {
   .catch(err => {
     // could not upload review to server or server replied with bad status
     // need to put the review into queue for upload
-    DBHelper.addToNetworkQueue(reviewData)
-    .then(_ => console.log('added to network queue :', reviewData))
-    .catch(_ => console.log('error adding to queue ', reviewData));
+    const dataToUpload = {
+      url: DBHelper.REVIEWS_URL,
+      method: 'POST',
+      body: reviewData,
+    };
+    DBHelper.addToNetworkQueue(dataToUpload)
+    .then(_ => console.log('added to network queue :', dataToUpload))
+    .catch(_ => console.log('error adding to queue ', dataToUpload));
   });
 }
 

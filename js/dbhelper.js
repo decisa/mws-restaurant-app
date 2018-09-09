@@ -342,7 +342,7 @@ class DBHelper {
       .then(db => {
         const tx = db.transaction('networkQueue', 'readwrite');
         const store = tx.objectStore('networkQueue');
-        store.put({review: data});
+        store.put({data: data});
         return tx.complete;
       });
   }
@@ -358,23 +358,23 @@ class DBHelper {
         if (!cursor) {
           return 'finished looping through the Queue';
         }
-        const reviewToUpload = cursor.value.review;
-        DBHelper.uploadReview(reviewToUpload)
+        const dataToUpload = cursor.value.data;
+        DBHelper.uploadData(dataToUpload)
           .then(response => {
             if (!response.ok) {
               // server error. Need to re-add review to networkQueue. reject promise
               // and take care of re-adding in .catch
-              const err = 'unable to upload : ' + reviewToUpload;
+              const err = 'unable to upload : ' + dataToUpload;
               return Promise.reject(err);
             }
             // uploaded fine . delete the entry at the cursor
-            console.log('review uploaded to server : ', reviewToUpload) 
+            console.log('review uploaded to server : ', dataToUpload) 
           })
           .catch(err => {
             // since idb transaction supports only microtransactions (no async calls)
             // by this time transaction is closed. so need to add review back to queue
-            console.log('uploadFromQueue >> uploadReview : ', err);
-            DBHelper.addToNetworkQueue(reviewToUpload);
+            console.log('uploadFromQueue >> uploadData : ', err);
+            DBHelper.addToNetworkQueue(dataToUpload);
           });
         cursor.delete();
         return cursor.continue().then(processQueue);
@@ -384,8 +384,11 @@ class DBHelper {
       // });
   }
 
-  static uploadReview(review) {
-    return fetch(DBHelper.REVIEWS_URL, {method: 'POST', body: JSON.stringify(review)});
+  static uploadData(data) {
+    const url = data.url;
+    const method = data.method;
+    const body = JSON.stringify(data.body);
+    return fetch(data.url, {method: data.method, body: JSON.stringify(data.body)});
   }
 
   // v v v do I NEED THESE TWO ?? v v v CHECK !
@@ -427,7 +430,7 @@ class DBHelper {
   static changeFavorite(restaurantId, newFavFlag) {
     this.fetchRestaurantById(restaurantId)
     .then(restaurant => {
-      console.log(typeof restaurant.is_favorite, restaurant.is_favorite, newFavFlag);
+      // console.log(typeof restaurant.is_favorite, restaurant.is_favorite, newFavFlag);
       let updatedRecord = restaurant;
       updatedRecord.is_favorite = newFavFlag;
   
@@ -439,13 +442,27 @@ class DBHelper {
         console.log('db Update error', err);
       });
  
-      let requestUrl = `http://localhost:1337/restaurants/${restaurantId}/?is_favorite=${newFavFlag}`;
+      const requestUrl = `http://localhost:1337/restaurants/${restaurantId}/?is_favorite=${newFavFlag}`;
+      const method = 'PUT';
+      const body = null;
+
       fetch(requestUrl, {method: 'PUT'})
       .then(response => {
+        if (!response.ok) {
+          // some server error, reject and add to networkQueue
+          return Promise.reject(`some server error : ${response.status} text: ${response.statusText}`);
+        }
         console.log('all good', response);
       })
       .catch(err => {
-        console('error:', err);
+        // if request did not go through, add it to networkQueue
+        const dataToUpload = {
+          url: requestUrl,
+          method: method,
+          body: body,
+        }
+        DBHelper.addToNetworkQueue(dataToUpload);
+        console('added fav. data to queue : ', err);
       })
   
   
