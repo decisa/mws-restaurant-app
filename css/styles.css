@@ -7,6 +7,12 @@
   width: 100%;
   position: relative; }
 
+.message-area {
+  position: relative;
+  width: 100%;
+  height: 40px;
+  background-color: white; }
+
 #status {
   position: absolute;
   top: 1px;

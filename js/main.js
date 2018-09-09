@@ -41,8 +41,22 @@ updateNetworkStatus = () => {
   statusLabel.innerHTML = networkStatus.toUpperCase();
   statusLabel.className = networkStatus;
   console.log('new network status: ', networkStatus);
+  if (networkStatus === 'online') {
+    DBHelper.uploadFromQueue()
+    .then(counter => {
+      console.log('finished going through queue : ', counter);
+      // time to sync localDB with server:
+      if (counter) {
+        postMessage(`You are back Online.${counter} postponed request${counter === 1 ? ' was' : 's were'} processed`);
+      }  
+    })
+    .catch(err => console.log('error : ', err));
+  }
 }
 
+postMessage = (message) => {
+  document.getElementById('message').innerHTML = message;
+}
 
 
 /**

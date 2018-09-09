@@ -33,7 +33,7 @@ console.log('new network status: ', networkStatus);
 
 if (networkStatus === 'online') {
   DBHelper.uploadFromQueue()
-  .then(_ => {
+  .then(counter => {
     console.log('finished going through queue');
     // time to sync localDB with server:
     console.log('fetching for restaurant #', restaurant.id);
@@ -43,6 +43,8 @@ if (networkStatus === 'online') {
       // refresh reviews:
       console.log('refreshing page');
       fillReviewsHTML();
+      if (counter)
+        document.getElementById('message').innerHTML = `You are back Online. ${counter} postponed request${counter === 1 ? ' was' : 's were'}  processed`;
     })
     .catch(_ => {console.log('localDB updated with new reviews')});
 
@@ -122,12 +124,17 @@ submitReview = (event) => {
       body: reviewData,
     };
     DBHelper.addToNetworkQueue(dataToUpload)
-    .then(_ => console.log('added to network queue :', dataToUpload))
-    .catch(_ => console.log('error adding to queue ', dataToUpload));
+    .then(_ => {
+      postMessage('Browser is Offline. Your review is added to queue');
+      document.getElementById('reviews-form').reset();
+    })
+    .catch(_ => postMessage('Error. Browser is Offline. Could not add to queue. Retry later.'));
   });
 }
 
-
+postMessage = (message) => {
+  document.getElementById('message').innerHTML = message;
+}
 
 addRedBorder = (element) => {
   element.classList.add('red-border');

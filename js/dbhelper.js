@@ -349,6 +349,7 @@ class DBHelper {
 
   static uploadFromQueue() {
     let uploadPromise = Promise.resolve();
+    let counter = 0;
 
     return this.dbPromise
       .then(db => {
@@ -358,8 +359,9 @@ class DBHelper {
       })
       .then(function processQueue(cursor) {
         if (!cursor) {
-          return uploadPromise;
+          return uploadPromise.then(() => Promise.resolve(counter));
         }
+        counter += 1;
         const dataToUpload = cursor.value.data;
         uploadPromise = uploadPromise
         .then(() => {
