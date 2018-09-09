@@ -326,7 +326,7 @@ class DBHelper {
                 return tx.complete;
               })
               .catch(_ => console.log('error adding reviews in fetchRestaurantReviews()'));
-            return networkReviews;
+            return networkReviews.reverse();
           });
       });
   }
@@ -391,6 +391,25 @@ class DBHelper {
     const body = JSON.stringify(data.body);
     return fetch(data.url, {method: data.method, body: JSON.stringify(data.body)});
   }
+
+  static getPendingReviewsInQueue(restaurantId) {
+    return this.dbPromise
+      .then(db => {
+        const store = db.transaction('networkQueue').objectStore('networkQueue');
+        return store.getAll();
+      })
+      .then(pendingRequests => {
+        if (pendingRequests.length === 0) {
+          return [];
+        }
+        let reviews = pendingRequests.filter(req => req.data.url === DBHelper.REVIEWS_URL);
+        reviews = reviews.map(elem => elem.data.body);
+        reviews = reviews.filter(elem => elem.restaurant_id === restaurantId);
+        return reviews;
+      });
+  }
+
+
 
   static changeFavorite(restaurantId, newFavFlag) {
     this.fetchRestaurantById(restaurantId)

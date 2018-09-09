@@ -2,6 +2,7 @@ var restaurant;
 
 var map;
 var dataLoaded = false;
+var firstLoad = true;
 
 /**
  * Initialize map as soon as the page is loaded.
@@ -19,6 +20,7 @@ document.addEventListener('DOMContentLoaded', (event) => {
       window.addEventListener('online', updateNetworkStatus);
       window.addEventListener('offline', updateNetworkStatus);
       updateNetworkStatus();
+      firstLoad = false;
     });
 });
 
@@ -31,7 +33,8 @@ statusLabel.innerHTML = networkStatus.toUpperCase();
 statusLabel.className = networkStatus;
 console.log('new network status: ', networkStatus);
 
-if (networkStatus === 'online') {
+// to prevent double loading on first page visit
+if ((networkStatus === 'online') && (!firstLoad)) {
   DBHelper.uploadFromQueue()
   .then(counter => {
     // finished going through queue
@@ -125,6 +128,7 @@ submitReview = (event) => {
     .then(_ => {
       postMessage('Browser is Offline. Your review is added to queue');
       document.getElementById('reviews-form').reset();
+      fillReviewsHTML();
     })
     .catch(_ => postMessage('Error. Browser is Offline. Could not add to queue. Retry later.'));
   });
@@ -327,29 +331,52 @@ fillRestaurantHoursHTML = (operatingHours = self.restaurant.operating_hours) => 
  * Create all reviews HTML and add them to the webpage.
  */
 fillReviewsHTML = (id = restaurant.id) => {
-  DBHelper.fetchRestaurantReviews(id)
-  .then(reviews => {
-    const ul = document.getElementById('reviews-list');
-    ul.innerHTML = '';
+  const ul = document.getElementById('reviews-list');
+  ul.innerHTML = '';
 
-    if (!reviews) {
-      const noReviews = document.createElement('li');
-      noReviews.innerHTML = 'No reviews yet!';
-      noReviews.className = 'review';
-      ul.appendChild(noReviews);
-      return;
-    }
-    
-    reviews.forEach(review => {
-      ul.appendChild(createReviewHTML(review));
+  showPendingReviews(restaurant.id)
+  .then(() => {
+    DBHelper.fetchRestaurantReviews(id)
+    .then(reviews => {
+      if (!reviews) {
+        const noReviews = document.createElement('li');
+        noReviews.innerHTML = 'No reviews yet!';
+        noReviews.className = 'review';
+        ul.appendChild(noReviews);
+        return;
+      }
+      
+      reviews.forEach(review => {
+        ul.appendChild(createReviewHTML(review));
+      });
     });
   });
 }
 
 /**
+ * Shows all reviews of this restaurant id that are still pending
+ */
+showPendingReviews = (id = restaurant.id) => {
+  return DBHelper.getPendingReviewsInQueue(id)
+    .then(fillPendingReviews);
+} 
+
+fillPendingReviews = (reviews) => {
+  if (!reviews) {
+    return;
+  }
+  const ul = document.getElementById('reviews-list');
+  reviews.reverse().forEach(review => {
+    ul.appendChild(createReviewHTML(review, true));
+  });
+}
+
+
+
+/**
  * Create review HTML and add it to the webpage.
  */
-createReviewHTML = (review) => {
+createReviewHTML = (review, isPending = false) => {
   const li = document.createElement('li');
   const name = document.createElement('p');
   name.innerHTML = review.name;
@@ -357,13 +384,18 @@ createReviewHTML = (review) => {
   li.appendChild(name);
 
   const date = document.createElement('p');
-  // can compare updatedAt and createdAt and let user know if the review is updated or original
-  const dateOfReview = new Date(review.updatedAt);
-  date.innerHTML = '';
-  if (review.createdAt != review.updatedAt) {
-    date.innerHTML = 'updated ';
+  
+  if (isPending) {
+    date.innerHTML = 'pending upload';
+  } else {
+    // can compare updatedAt and createdAt and let user know if the review is updated or original
+    const dateOfReview = new Date(review.updatedAt);
+    date.innerHTML = '';
+    if (review.createdAt != review.updatedAt) {
+      date.innerHTML = 'updated ';
+    }
+    date.innerHTML += `${dateOfReview.toDateString()} at ${dateOfReview.getHours()}:${dateOfReview.getMinutes()}`;
   }
-  date.innerHTML += `${dateOfReview.toDateString()} at ${dateOfReview.getHours()}:${dateOfReview.getMinutes()}`;
   date.className = 'date';
   li.appendChild(date);
 
