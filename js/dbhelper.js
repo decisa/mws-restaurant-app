@@ -348,6 +348,8 @@ class DBHelper {
   }
 
   static uploadFromQueue() {
+    let uploadPromise = Promise.resolve();
+
     return this.dbPromise
       .then(db => {
         const tx = db.transaction('networkQueue', 'readwrite');
@@ -356,26 +358,29 @@ class DBHelper {
       })
       .then(function processQueue(cursor) {
         if (!cursor) {
-          return 'finished looping through the Queue';
+          return uploadPromise;
         }
         const dataToUpload = cursor.value.data;
-        DBHelper.uploadData(dataToUpload)
-          .then(response => {
-            if (!response.ok) {
-              // server error. Need to re-add review to networkQueue. reject promise
-              // and take care of re-adding in .catch
-              const err = 'unable to upload : ' + dataToUpload;
-              return Promise.reject(err);
-            }
-            // uploaded fine . delete the entry at the cursor
-            console.log('review uploaded to server : ', dataToUpload) 
-          })
-          .catch(err => {
-            // since idb transaction supports only microtransactions (no async calls)
-            // by this time transaction is closed. so need to add review back to queue
-            console.log('uploadFromQueue >> uploadData : ', err);
-            DBHelper.addToNetworkQueue(dataToUpload);
-          });
+        uploadPromise = uploadPromise
+        .then(() => {
+          return DBHelper.uploadData(dataToUpload)
+            .then(response => {
+              if (!response.ok) {
+                // server error. Need to re-add review to networkQueue. reject promise
+                // and take care of re-adding in .catch
+                const err = 'unable to upload : ' + dataToUpload;
+                return Promise.reject(err);
+              }
+              // uploaded fine . delete the entry at the cursor
+              console.log('review uploaded to server : ', dataToUpload) 
+            })
+            .catch(err => {
+              // since idb transaction supports only microtransactions (no async calls)
+              // by this time transaction is closed. so need to add review back to queue
+              console.log('uploadFromQueue >> uploadData : ', err);
+              DBHelper.addToNetworkQueue(dataToUpload);
+            })
+        });
         cursor.delete();
         return cursor.continue().then(processQueue);
       })

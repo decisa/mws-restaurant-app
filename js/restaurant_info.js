@@ -340,7 +340,7 @@ createReviewHTML = (review) => {
   if (review.createdAt != review.updatedAt) {
     date.innerHTML = 'updated ';
   }
-  date.innerHTML += dateOfReview.toDateString();
+  date.innerHTML += `${dateOfReview.toDateString()} at ${dateOfReview.getHours()}:${dateOfReview.getMinutes()}`;
   date.className = 'date';
   li.appendChild(date);
 
