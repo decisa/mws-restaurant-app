@@ -1,12 +1,13 @@
+'use strict';
 
-const projectCacheName = 'restaurant-project-v5';
-const projectImgCacheName = 'restaurant-images-v5'; // gsss
+const projectCacheName = 'restaurant-project-v6';
+const projectImgCacheName = 'restaurant-images-v6'; // gssss
 const allCaches = [
   projectCacheName,
   projectImgCacheName,
 ];
 
-'use strict';
+
 
 self.addEventListener('install', (event) => {
   const urlsToCache = [
@@ -20,9 +21,8 @@ self.addEventListener('install', (event) => {
     '/js/dbhelper.js',
     '/js/restaurant_info.js',
     '/css/styles.css',
-    '/css/entypo.min.css',  
+    // '/css/entypo.min.css',  
     '/img/image-na.png',
-    '/fonts/entypo.woff',
   ];
 
   // add restaurant-not-available image to cache in the background:

@@ -44,7 +44,7 @@ if (networkStatus === 'online') {
       console.log('refreshing page');
       fillReviewsHTML();
       if (counter)
-        document.getElementById('message').innerHTML = `You are back Online. ${counter} postponed request${counter === 1 ? ' was' : 's were'}  processed`;
+        postMessage(`You are back Online. ${counter} postponed request${counter === 1 ? ' was' : 's were'}  processed`);
     })
     .catch(_ => {console.log('localDB updated with new reviews')});
 
@@ -59,20 +59,20 @@ submitReview = (event) => {
   const inputName = document.getElementById('name');
   const inputRating = document.getElementById('rating');
   const inputReview = document.getElementById('reviews');
-  const message = document.getElementById('message');
+  
 
   if (inputName.value === '') {
-    message.innerHTML = 'Please enter your name';
+    postMessage('Please enter your name');
     addRedBorder(inputName);
     return;
   }
   if (inputRating.value === '0') {
-    message.innerHTML = 'Need to select rating !';
+    postMessage('Need to select rating !');
     addRedBorder(inputRating);
     return;
   }
   if (inputReview.value === '') {
-    message.innerHTML = 'Cannot submit without review. Please add a few words !';
+    postMessage('Cannot submit without review. Please add a few words !');
     addRedBorder(inputReview);
     return;
   }
@@ -112,7 +112,7 @@ submitReview = (event) => {
     // reset form on successfull completion
     console.log('resetting form');
     document.getElementById('reviews-form').reset();
-    document.getElementById('message').innerHTML = "review successfully submited";
+    postMessage("review successfully submited");
     
   })
   .catch(err => {
@@ -133,7 +133,7 @@ submitReview = (event) => {
 }
 
 postMessage = (message) => {
-  document.getElementById('message').innerHTML = message;
+  document.getElementById('statusMessage').innerHTML = message;
 }
 
 addRedBorder = (element) => {
@@ -144,7 +144,7 @@ addRedBorder = (element) => {
 removeRedBorder = (event) => {
   event.target.classList.remove('red-border');
   event.target.removeEventListener('focus', removeRedBorder);
-  document.getElementById('message').innerHTML = '';
+  postMessage('');
 }
 
 /**
@@ -254,21 +254,34 @@ favoriteIcon = (restaurant) => {
   let icon = document.createElement('i');
   icon.innerHTML = '&hearts;';  
   icon.dataset.id = restaurant.id;
+  icon.setAttribute('role', 'button');
+  icon.setAttribute('tabindex', '0');
 
   if (restaurant.is_favorite === true || restaurant.is_favorite === 'true') {
     icon.dataset.fav = "yes";
     icon.className = 'heart';
+    icon.setAttribute('aria-label', 'Add to favorites');
+    
   }
   else {
     icon.className = 'no-heart';
     icon.dataset.fav = "no";
+    icon.setAttribute('aria-label', 'Remove from favorites');
   }
-  icon.onclick = onHeartClick;
+  icon.addEventListener('click', onHeartClick);
+  icon.addEventListener('keyup', onHeartClick);
 
   return icon;
 }
 
-onHeartClick = (event) => {
+onHeartClick = (event) => { 
+  if (event.type === 'keyup') {
+    if ((event.keyCode != 32) && (event.keyCode != 13))
+      return;
+  }
+  event.stopPropagation();
+  event.preventDefault();
+
   const icon = event.target;
   const restaurantId = icon.dataset.id;
   
@@ -276,10 +289,12 @@ onHeartClick = (event) => {
   if (icon.dataset.fav === 'yes') {
     icon.dataset.fav = 'no';
     icon.className = 'no-heart';
+    icon.setAttribute('aria-label', 'Remove from favorites');
     DBHelper.changeFavorite(restaurantId, false);  
   } else {
     icon.dataset.fav = 'yes';
     icon.className = 'heart';
+    icon.setAttribute('aria-label', 'Add to favorites');
     DBHelper.changeFavorite(restaurantId, true);
   }
 }

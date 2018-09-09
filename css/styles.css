@@ -33,7 +33,7 @@
   max-width: 790px;
   position: relative; }
 
-#message {
+#statusMessage {
   position: absolute;
   bottom: 10px;
   left: 12px;

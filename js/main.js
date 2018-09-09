@@ -55,7 +55,7 @@ updateNetworkStatus = () => {
 }
 
 postMessage = (message) => {
-  document.getElementById('message').innerHTML = message;
+  document.getElementById('statusMessage').innerHTML = message;
 }
 
 
