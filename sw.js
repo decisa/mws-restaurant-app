@@ -1,7 +1,7 @@
 'use strict';
 
-const projectCacheName = 'restaurant-project-v6';
-const projectImgCacheName = 'restaurant-images-v6'; // gssss
+const projectCacheName = 'restaurant-project-v7';
+const projectImgCacheName = 'restaurant-images-v7'; 
 const allCaches = [
   projectCacheName,
   projectImgCacheName,
@@ -21,7 +21,6 @@ self.addEventListener('install', (event) => {
     '/js/dbhelper.js',
     '/js/restaurant_info.js',
     '/css/styles.css',
-    // '/css/entypo.min.css',  
     '/img/image-na.png',
   ];
 

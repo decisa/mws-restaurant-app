@@ -91,9 +91,6 @@ class DBHelper {
           restaurants.forEach(restaurant => store.put({id: restaurant.id + '', data: restaurant}));
           return tx.complete;
         })
-        .then(() => {
-          console.log('all restaurants are added to DB');
-        })
         .catch(() => {
           console.log('there was an error while trying to add restaurants to DB');
         });
@@ -117,7 +114,7 @@ class DBHelper {
         return Promise.reject(`Restaurant ID#${id} not found in DB`);
       })
       .catch(err => {
-        console.log(err);
+        // console.log(err);
         // if restaurant ID not found in DB try fetching network:
         return this.getJsonData(`${DBHelper.DATABASE_URL}/${id}`)
           .catch(this.notFound);
@@ -235,7 +232,8 @@ class DBHelper {
         return Promise.reject('cuisines list is not in DB yet');
       })
       .catch(err => {
-        console.log(err);
+        // console.log(err);
+        // if not in DB yet, or DB error, fetch from network:
         return this.fetchRestaurants()
           .then(restaurants => {
             // Get all cuisines from all restaurants
@@ -249,9 +247,6 @@ class DBHelper {
               const store = tx.objectStore('extraInfo');
               store.put({name: 'cuisines', data: uniqueCuisines});
               return tx.complete;
-            })
-            .then(() => {
-              // console.log('cuisines list added to DB');
             })
             .catch(() => {
               console.log('error adding cuisines list to DB');
@@ -315,23 +310,22 @@ class DBHelper {
           // reviews not found, we will fetch reviews from server in .catch()
           return Promise.reject(err);
         }
-        console.log('found reviews in DB', dbReviews.length);
+        // console.log('found reviews in DB', dbReviews.length);
         return dbReviews.reverse();
       })
       .catch(err => {
-        console.log('my error', err);
+        // console.log('my error', err);
         const reviewsRequest = `${DBHelper.REVIEWS_URL}/?restaurant_id=${restaurantId}`;
         return this.getJsonData(reviewsRequest)
           .then(networkReviews => {
-            this.dbPromise
+            DBHelper.dbPromise
               .then(db => {
                 const tx = db.transaction('reviews', 'readwrite');
                 const store = tx.objectStore('reviews');
                 networkReviews.forEach(review => store.put(review));
                 return tx.complete;
               })
-              .then(_ => console.log('reviews added'))
-              .catch(_ => console.log('error adding reviews'));
+              .catch(_ => console.log('error adding reviews in fetchRestaurantReviews()'));
             return networkReviews;
           });
       });
@@ -374,12 +368,12 @@ class DBHelper {
                 return Promise.reject(err);
               }
               // uploaded fine . delete the entry at the cursor
-              console.log('review uploaded to server : ', dataToUpload) 
+              // console.log('review uploaded to server : ', dataToUpload) 
             })
             .catch(err => {
               // since idb transaction supports only microtransactions (no async calls)
               // by this time transaction is closed. so need to add review back to queue
-              console.log('uploadFromQueue >> uploadData : ', err);
+              // console.log('uploadFromQueue >> uploadData : ', err);
               DBHelper.addToNetworkQueue(dataToUpload);
             })
         });
@@ -398,53 +392,13 @@ class DBHelper {
     return fetch(data.url, {method: data.method, body: JSON.stringify(data.body)});
   }
 
-  // v v v do I NEED THESE TWO ?? v v v CHECK !
-  static addNewReviewLocalDB(review) {
-    if (!review) {
-      return Promise.reject('no review to add');
-    }
-    return this.dbPromise
-      .then(db => {
-        const tx = db.transaction('reviews', 'readwrite');
-        const store = tx.objectStore('reviews');
-        console.log('review : ', review);
-        store.put(review);
-        return tx.complete;
-      });
-  }
-
-  /*
-   * Helper function that searches server's DB for the id of a newly added review
-   */
-  static newReviewID(reviewInfo) {
-    const restaurantId = reviewInfo.restaurant_id;
-    return this.fetchRestaurantReviews(restaurantId,)
-      .then(networkReviews => {
-        if (!networkReviews) {
-          const err = 'reviews not found ' + networkReviews;
-          console.log(err);
-          return Promise.reject(err);
-        }
-        console.log('network reviews : ', networkReviews);
-        console.log('review to find : ', reviewInfo);
-        let matchingReviews = networkReviews.filter(review => (review.name === reviewInfo.name) && 
-            (review.rating === reviewInfo.rating) &&
-            (review.reviews === reviewInfo.reviews));
-        return matchingReviews;
-      });
-  }
-
   static changeFavorite(restaurantId, newFavFlag) {
     this.fetchRestaurantById(restaurantId)
     .then(restaurant => {
-      // console.log(typeof restaurant.is_favorite, restaurant.is_favorite, newFavFlag);
       let updatedRecord = restaurant;
       updatedRecord.is_favorite = newFavFlag;
   
       DBHelper.updateRestaurantDB(restaurantId, updatedRecord)
-      .then(() => {
-        console.log('db Updated');
-      })
       .catch((err) => {
         console.log('db Update error', err);
       });
@@ -459,7 +413,6 @@ class DBHelper {
           // some server error, reject and add to networkQueue
           return Promise.reject(`some server error : ${response.status} text: ${response.statusText}`);
         }
-        console.log('all good', response);
       })
       .catch(err => {
         // if request did not go through, add it to networkQueue
@@ -469,10 +422,7 @@ class DBHelper {
           body: body,
         }
         DBHelper.addToNetworkQueue(dataToUpload);
-        console('added fav. data to queue : ', err);
       })
-  
-  
     });
   } 
 

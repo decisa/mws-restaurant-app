@@ -41,11 +41,11 @@ updateNetworkStatus = () => {
   statusLabel.innerHTML = networkStatus.toUpperCase();
   statusLabel.className = networkStatus;
   console.log('new network status: ', networkStatus);
+
+  // if new status is Online - take care of the offline
   if (networkStatus === 'online') {
     DBHelper.uploadFromQueue()
     .then(counter => {
-      console.log('finished going through queue : ', counter);
-      // time to sync localDB with server:
       if (counter) {
         postMessage(`You are back Online.${counter} postponed request${counter === 1 ? ' was' : 's were'} processed`);
       }  
@@ -241,21 +241,8 @@ createRestaurantHTML = (restaurant, current, total) => {
   image.alt = restaurant.name;
   picture.append(image);
   imageHolder.append(picture);
-  const heartIcon = document.createElement('i');
-  heartIcon.innerHTML = '&hearts;';  
-  heartIcon.dataset.id = restaurant.id;
 
-  console.log(`${restaurant.name} id : ${restaurant.id} (${typeof restaurant.id}), is fav : ${restaurant.is_favorite} (${typeof restaurant.is_favorite})`);
-
-  if (restaurant.is_favorite === true || restaurant.is_favorite === 'true') {
-    heartIcon.dataset.fav = "yes";
-    heartIcon.className = 'heart';
-  }
-  else {
-    heartIcon.className = 'no-heart';
-    heartIcon.dataset.fav = "no";
-  }
-  heartIcon.onclick = onHeartClick;
+  const heartIcon = favoriteIcon(restaurant);
   imageHolder.append(heartIcon);
 
   li.append(imageHolder);
@@ -281,7 +268,44 @@ createRestaurantHTML = (restaurant, current, total) => {
   return li;
 }
 
-onHeartClick = (event) => {
+/**
+ * Create Favorite icon for a specific restaurant
+ */
+favoriteIcon = (restaurant) => {
+  let icon = document.createElement('i');
+  icon.innerHTML = '&hearts;';  
+  icon.dataset.id = restaurant.id;
+  icon.setAttribute('role', 'button');
+  icon.setAttribute('tabindex', '0');
+
+  if (restaurant.is_favorite === true || restaurant.is_favorite === 'true') {
+    icon.dataset.fav = "yes";
+    icon.className = 'heart';
+    icon.setAttribute('aria-label', 'Add to favorites');
+    
+  }
+  else {
+    icon.className = 'no-heart';
+    icon.dataset.fav = "no";
+    icon.setAttribute('aria-label', 'Remove from favorites');
+  }
+  icon.addEventListener('click', onHeartClick);
+  icon.addEventListener('keyup', onHeartClick);
+
+  return icon;
+}
+
+/**
+ * Handler to add / remove favorite status
+ */
+onHeartClick = (event) => { 
+  if (event.type === 'keyup') {
+    if ((event.keyCode != 32) && (event.keyCode != 13))
+      return;
+  }
+  event.stopPropagation();
+  event.preventDefault();
+
   const icon = event.target;
   const restaurantId = icon.dataset.id;
   
@@ -289,15 +313,15 @@ onHeartClick = (event) => {
   if (icon.dataset.fav === 'yes') {
     icon.dataset.fav = 'no';
     icon.className = 'no-heart';
+    icon.setAttribute('aria-label', 'Remove from favorites');
     DBHelper.changeFavorite(restaurantId, false);  
   } else {
     icon.dataset.fav = 'yes';
     icon.className = 'heart';
+    icon.setAttribute('aria-label', 'Add to favorites');
     DBHelper.changeFavorite(restaurantId, true);
   }
 }
-
-
 
 /**
  * Add markers for current restaurants to the map.

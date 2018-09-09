@@ -34,25 +34,27 @@ console.log('new network status: ', networkStatus);
 if (networkStatus === 'online') {
   DBHelper.uploadFromQueue()
   .then(counter => {
-    console.log('finished going through queue');
+    // finished going through queue
     // time to sync localDB with server:
-    console.log('fetching for restaurant #', restaurant.id);
     DBHelper.fetchRestaurantReviews(restaurant.id, true)
     .then(_ => {
-      console.log('localDB updated with new reviews');
+      // console.log('localDB updated with new reviews');
       // refresh reviews:
-      console.log('refreshing page');
       fillReviewsHTML();
       if (counter)
         postMessage(`You are back Online. ${counter} postponed request${counter === 1 ? ' was' : 's were'}  processed`);
     })
-    .catch(_ => {console.log('localDB updated with new reviews')});
+    // .catch(_ => {console.log('localDB updated with new reviews')});
 
   })
   .catch(err => console.log('error : ', err));
 }
 }
 
+/**
+ * Function that handles submit event on the form. Uploads review to server
+ * In case of network error, adds network request to the queue
+ */
 submitReview = (event) => {
   event.preventDefault();
   const inputId = document.getElementById('restaurantID');
@@ -101,19 +103,15 @@ submitReview = (event) => {
     // time to sync localDB with server:
     DBHelper.fetchRestaurantReviews(reviewData.restaurant_id, true)
     .then(_ => {
-      console.log('localDB updated with new reviews');
+      // console.log('localDB updated with new reviews');
       // refresh reviews:
-      console.log('refreshing page');
       fillReviewsHTML();
     })
     .catch(_ => {console.log('localDB updated with new reviews')});
-    // console.log('review uploaded ', reviewData);
 
     // reset form on successfull completion
-    console.log('resetting form');
     document.getElementById('reviews-form').reset();
     postMessage("review successfully submited");
-    
   })
   .catch(err => {
     // could not upload review to server or server replied with bad status
@@ -136,11 +134,13 @@ postMessage = (message) => {
   document.getElementById('statusMessage').innerHTML = message;
 }
 
+/**
+ * Adds and removes red borders around form elements that had errors
+ */
 addRedBorder = (element) => {
   element.classList.add('red-border');
   element.addEventListener('focus', removeRedBorder);
 }
-
 removeRedBorder = (event) => {
   event.target.classList.remove('red-border');
   event.target.removeEventListener('focus', removeRedBorder);
@@ -274,6 +274,9 @@ favoriteIcon = (restaurant) => {
   return icon;
 }
 
+/**
+ * Handler to add / remove favorite status
+ */
 onHeartClick = (event) => { 
   if (event.type === 'keyup') {
     if ((event.keyCode != 32) && (event.keyCode != 13))
@@ -342,8 +345,6 @@ fillReviewsHTML = (id = restaurant.id) => {
     });
   });
 }
-
-// addNewReview(data)
 
 /**
  * Create review HTML and add it to the webpage.
